@@ -3,48 +3,55 @@
 namespace App\Http\Controllers\Pelanggan;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cucian;
+use App\Models\Pelanggan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class PelangganDashboardController extends Controller
+class DashboardController extends Controller
 {
     public function index()
     {
-        // Dummy data statistik pelanggan
+        // Ambil pelanggan berdasarkan user yang login
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        
+        if (!$pelanggan) {
+            return redirect()->route('home')
+                ->with('error', 'Data pelanggan tidak ditemukan!');
+        }
+        
+        // Statistik order pelanggan
+        $totalOrder = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)->count();
+        $sedangProses = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->whereIn('status_cucian', ['menunggu', 'diproses'])
+            ->count();
+        $selesai = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->where('status_cucian', 'selesai')
+            ->count();
+        $menungguDiambil = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->where('status_cucian', 'selesai')
+            ->count();
+        
+        // Total spending
+        $totalSpending = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->sum('total_harga');
+        
+        // Order terbaru (5 terakhir)
+        $recentOrders = Cucian::with(['layanan', 'pembayaran'])
+            ->where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->orderBy('tgl_order', 'desc')
+            ->take(5)
+            ->get();
+        
         $stats = [
-            'total_order' => 15,
-            'sedang_proses' => 3,
-            'selesai' => 10,
-            'menunggu_diambil' => 2
+            'total_order' => $totalOrder,
+            'sedang_proses' => $sedangProses,
+            'selesai' => $selesai,
+            'menunggu_diambil' => $menungguDiambil,
+            'total_spending' => $totalSpending
         ];
         
-        // Dummy data order terbaru
-        $recentOrders = collect([
-            (object)[
-                'no_order' => 'WW001',
-                'tanggal' => '2024-12-08 09:00:00',
-                'jenis_layanan' => 'Cuci + Setrika',
-                'berat' => 3.5,
-                'status' => 'proses',
-                'total_harga' => 35000
-            ],
-            (object)[
-                'no_order' => 'WW002',
-                'tanggal' => '2024-12-07 14:30:00',
-                'jenis_layanan' => 'Cuci Kering',
-                'berat' => 5.0,
-                'status' => 'selesai',
-                'total_harga' => 40000
-            ],
-            (object)[
-                'no_order' => 'WW003',
-                'tanggal' => '2024-12-06 10:15:00',
-                'jenis_layanan' => 'Setrika Saja',
-                'berat' => 2.0,
-                'status' => 'diambil',
-                'total_harga' => 15000
-            ],
-        ]);
-        
-        return view('pelanggan.dashboard', compact('stats', 'recentOrders'));
+        return view('pelanggan.dashboard', compact('stats', 'recentOrders', 'pelanggan'));
     }
 }

@@ -3,245 +3,167 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cucian;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class StatusCucianController extends Controller
 {
-    // Dummy data cucian
-    private function getAllCucian()
-    {
-        return collect([
-            (object)[
-                'id' => 1,
-                'no_order' => 'WW001',
-                'pelanggan_id' => 1,
-                'nama_pelanggan' => 'Budi Santoso',
-                'no_telp' => '081234567890',
-                'alamat' => 'Jl. Merdeka No. 123, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci + Setrika',
-                'berat' => 3.5,
-                'total_harga' => 35000,
-                'status' => 'menunggu',
-                'tanggal_masuk' => '2024-12-08 09:00:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-09 17:00:00',
-                'catatan' => 'Tolong hati-hati dengan baju putih'
-            ],
-            (object)[
-                'id' => 2,
-                'no_order' => 'WW002',
-                'pelanggan_id' => 2,
-                'nama_pelanggan' => 'Siti Aminah',
-                'no_telp' => '082345678901',
-                'alamat' => 'Jl. Sudirman No. 45, Jakarta Pusat',
-                'jenis_layanan' => 'Cuci Kering',
-                'berat' => 5.0,
-                'total_harga' => 40000,
-                'status' => 'proses',
-                'tanggal_masuk' => '2024-12-07 14:30:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-08 14:30:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 3,
-                'no_order' => 'WW003',
-                'pelanggan_id' => 3,
-                'nama_pelanggan' => 'Ahmad Dahlan',
-                'no_telp' => '083456789012',
-                'alamat' => 'Jl. Gatot Subroto No. 78, Jakarta Selatan',
-                'jenis_layanan' => 'Setrika Saja',
-                'berat' => 2.0,
-                'total_harga' => 15000,
-                'status' => 'selesai',
-                'tanggal_masuk' => '2024-12-06 10:15:00',
-                'tanggal_selesai' => '2024-12-07 16:00:00',
-                'estimasi_selesai' => '2024-12-07 10:15:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 4,
-                'no_order' => 'WW004',
-                'pelanggan_id' => 4,
-                'nama_pelanggan' => 'Rina Wati',
-                'no_telp' => '084567890123',
-                'alamat' => 'Jl. Thamrin No. 90, Jakarta Pusat',
-                'jenis_layanan' => 'Cuci + Setrika Express',
-                'berat' => 4.5,
-                'total_harga' => 67500,
-                'status' => 'proses',
-                'tanggal_masuk' => '2024-12-06 08:20:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-07 08:20:00',
-                'catatan' => 'Express 24 jam'
-            ],
-            (object)[
-                'id' => 5,
-                'no_order' => 'WW005',
-                'pelanggan_id' => 5,
-                'nama_pelanggan' => 'Joko Widodo',
-                'no_telp' => '085678901234',
-                'alamat' => 'Jl. Kuningan No. 12, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci Kering',
-                'berat' => 6.0,
-                'total_harga' => 48000,
-                'status' => 'selesai',
-                'tanggal_masuk' => '2024-12-05 13:10:00',
-                'tanggal_selesai' => '2024-12-06 10:00:00',
-                'estimasi_selesai' => '2024-12-06 13:10:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 6,
-                'no_order' => 'WW006',
-                'pelanggan_id' => 6,
-                'nama_pelanggan' => 'Dewi Lestari',
-                'no_telp' => '086789012345',
-                'alamat' => 'Jl. Casablanca No. 56, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci + Setrika',
-                'berat' => 3.0,
-                'total_harga' => 30000,
-                'status' => 'menunggu',
-                'tanggal_masuk' => '2024-12-05 11:30:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-07 11:30:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 7,
-                'no_order' => 'WW007',
-                'pelanggan_id' => 7,
-                'nama_pelanggan' => 'Hendra Gunawan',
-                'no_telp' => '087890123456',
-                'alamat' => 'Jl. Rasuna Said No. 34, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci Kering',
-                'berat' => 4.0,
-                'total_harga' => 32000,
-                'status' => 'proses',
-                'tanggal_masuk' => '2024-12-04 15:00:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-06 15:00:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 8,
-                'no_order' => 'WW008',
-                'pelanggan_id' => 8,
-                'nama_pelanggan' => 'Maya Sari',
-                'no_telp' => '088901234567',
-                'alamat' => 'Jl. TB Simatupang No. 89, Jakarta Selatan',
-                'jenis_layanan' => 'Setrika Saja',
-                'berat' => 2.5,
-                'total_harga' => 18750,
-                'status' => 'selesai',
-                'tanggal_masuk' => '2024-12-04 08:45:00',
-                'tanggal_selesai' => '2024-12-05 14:30:00',
-                'estimasi_selesai' => '2024-12-05 08:45:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 9,
-                'no_order' => 'WW009',
-                'pelanggan_id' => 9,
-                'nama_pelanggan' => 'Bambang Suryanto',
-                'no_telp' => '089012345678',
-                'alamat' => 'Jl. HR Rasuna Said No. 100, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci + Setrika',
-                'berat' => 5.5,
-                'total_harga' => 55000,
-                'status' => 'menunggu',
-                'tanggal_masuk' => '2024-12-03 17:20:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-05 17:20:00',
-                'catatan' => ''
-            ],
-            (object)[
-                'id' => 10,
-                'no_order' => 'WW010',
-                'pelanggan_id' => 10,
-                'nama_pelanggan' => 'Putri Handayani',
-                'no_telp' => '081123456789',
-                'alamat' => 'Jl. Senopati No. 67, Jakarta Selatan',
-                'jenis_layanan' => 'Cuci Kering Express',
-                'berat' => 3.5,
-                'total_harga' => 52500,
-                'status' => 'proses',
-                'tanggal_masuk' => '2024-12-03 12:00:00',
-                'tanggal_selesai' => null,
-                'estimasi_selesai' => '2024-12-04 12:00:00',
-                'catatan' => ''
-            ],
-        ]);
-    }
-
     public function index(Request $request)
     {
         $perPage = $request->get('paginate', 15);
-        $currentPage = $request->get('page', 1);
         
-        $allData = $this->getAllCucian();
+        $query = Cucian::with(['pelanggan', 'layanan', 'pembayaran']);
         
         // Filter berdasarkan search
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
-            $allData = $allData->filter(function($item) use ($search) {
-                return str_contains(strtolower($item->no_order), $search) ||
-                       str_contains(strtolower($item->nama_pelanggan), $search);
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('cucian_id', 'like', "%{$search}%")
+                  ->orWhereHas('pelanggan', function($q2) use ($search) {
+                      $q2->where('nama', 'like', "%{$search}%");
+                  });
             });
         }
         
         // Filter berdasarkan status
         if ($request->filled('status')) {
-            $allData = $allData->filter(function($item) use ($request) {
-                return $item->status === $request->status;
-            });
+            $query->where('status_cucian', $request->status);
         }
         
-        // Buat paginator manual
-        $total = $allData->count();
-        $items = $allData->forPage($currentPage, $perPage)->values();
+        $cucian = $query->orderBy('tgl_order', 'desc')->paginate($perPage);
         
-        $cucian = new LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            [
-                'path' => $request->url(),
-                'query' => $request->query()
-            ]
-        );
-
         // Hitung statistik
-        $allCucian = $this->getAllCucian();
-        $totalMenunggu = $allCucian->where('status', 'menunggu')->count();
-        $totalProses = $allCucian->where('status', 'proses')->count();
-        $totalSelesai = $allCucian->where('status', 'selesai')->count();
-        $totalDiambil = $allCucian->where('status', 'diambil')->count();
+        $totalMenunggu = Cucian::where('status_cucian', 'menunggu')->count();
+        $totalProses = Cucian::where('status_cucian', 'diproses')->count();
+        $totalSelesai = Cucian::where('status_cucian', 'selesai')->count();
+        $totalDiambil = Cucian::where('status_cucian', 'diambil')->count();
         
         return view('staff.status-cucian.index', compact(
             'cucian',
             'totalMenunggu',
-            'totalProses', 
+            'totalProses',
             'totalSelesai',
             'totalDiambil'
         ));
     }
 
-    public function konfirmasi(Request $request, $id)
+    public function show($id)
     {
-        // Simulasi konfirmasi status
-        $status = $request->status;
+        $cucian = Cucian::with([
+            'pelanggan',
+            'layanan',
+            'detail.listHarga',
+            'pembayaran'
+        ])->findOrFail($id);
         
-        return redirect()->route('staff.status-cucian.index')
-            ->with('success', "Status cucian berhasil diubah menjadi {$status}!");
+        return view('staff.status-cucian.detail', compact('cucian'));
     }
 
     public function updateStatus(Request $request, $id)
     {
-        // Simulasi update status
-        return redirect()->route('staff.status-cucian.index')
-            ->with('success', 'Status cucian berhasil diupdate!');
+        $cucian = Cucian::findOrFail($id);
+        
+        $request->validate([
+            'status_cucian' => 'required|in:menunggu,diproses,selesai,diambil',
+            'catatan' => 'nullable|string'
+        ]);
+        
+        $oldStatus = $cucian->status_cucian;
+        $newStatus = $request->status_cucian;
+        
+        $cucian->status_cucian = $newStatus;
+        
+        // Update tanggal berdasarkan status
+        if ($newStatus === 'selesai' && !$cucian->tgl_selesai) {
+            $cucian->tgl_selesai = now();
+        }
+        
+        if ($newStatus === 'diambil' && !$cucian->tgl_diambil) {
+            $cucian->tgl_diambil = now();
+            
+            // Jika belum ada tgl_selesai, set juga
+            if (!$cucian->tgl_selesai) {
+                $cucian->tgl_selesai = now();
+            }
+        }
+        
+        // Update catatan jika ada
+        if ($request->filled('catatan')) {
+            $cucian->catatan = $request->catatan;
+        }
+        
+        $cucian->save();
+        
+        $statusLabel = [
+            'menunggu' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'diambil' => 'Diambil'
+        ];
+        
+        return redirect()->back()
+            ->with('success', "Status cucian berhasil diubah dari {$statusLabel[$oldStatus]} menjadi {$statusLabel[$newStatus]}!");
+    }
+    
+    public function konfirmasi(Request $request, $id)
+    {
+        $cucian = Cucian::findOrFail($id);
+        
+        // Validasi status yang bisa dikonfirmasi
+        if ($cucian->status_cucian !== 'menunggu') {
+            return redirect()->back()
+                ->with('error', 'Hanya cucian dengan status menunggu yang bisa dikonfirmasi!');
+        }
+        
+        // Ubah status menjadi diproses
+        $cucian->status_cucian = 'diproses';
+        $cucian->save();
+        
+        return redirect()->back()
+            ->with('success', 'Cucian berhasil dikonfirmasi dan akan segera diproses!');
+    }
+    
+    public function selesai($id)
+    {
+        $cucian = Cucian::findOrFail($id);
+        
+        // Validasi status
+        if ($cucian->status_cucian !== 'diproses') {
+            return redirect()->back()
+                ->with('error', 'Hanya cucian yang sedang diproses yang bisa diselesaikan!');
+        }
+        
+        // Ubah status menjadi selesai
+        $cucian->status_cucian = 'selesai';
+        $cucian->tgl_selesai = now();
+        $cucian->save();
+        
+        return redirect()->back()
+            ->with('success', 'Cucian berhasil diselesaikan!');
+    }
+    
+    public function diambil($id)
+    {
+        $cucian = Cucian::findOrFail($id);
+        
+        // Validasi status
+        if ($cucian->status_cucian !== 'selesai') {
+            return redirect()->back()
+                ->with('error', 'Hanya cucian yang sudah selesai yang bisa diambil!');
+        }
+        
+        // Cek pembayaran
+        if ($cucian->pembayaran && $cucian->pembayaran->status_bayar !== 'lunas') {
+            return redirect()->back()
+                ->with('error', 'Pelanggan harus melunasi pembayaran terlebih dahulu!');
+        }
+        
+        // Ubah status menjadi diambil
+        $cucian->status_cucian = 'diambil';
+        $cucian->tgl_diambil = now();
+        $cucian->save();
+        
+        return redirect()->back()
+            ->with('success', 'Cucian berhasil diambil oleh pelanggan!');
     }
 }

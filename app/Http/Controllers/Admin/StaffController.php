@@ -1,89 +1,42 @@
 <?php
-// ============================================
-// FILE 1: app/Http/Controllers/Admin/StaffController.php
-// ============================================
 
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class StaffController extends Controller
 {
     public function index(Request $request)
     {
-        // Dummy data untuk testing
-        $dummyData = collect([
-            (object)[
-                'users_id' => 1,
-                'nama' => 'Budi Santoso',
-                'email' => 'budi.staff@washwes.com',
-                'no_telp' => '081234567890',
-                'no_wa' => '081234567890',
-                'alamat' => 'Jl. Merdeka No. 123, Jakarta',
-                'foto' => null,
-                'status' => 'aktif',
-                'created_at' => now()->subDays(30),
-            ],
-            (object)[
-                'users_id' => 2,
-                'nama' => 'Siti Nurhaliza',
-                'email' => 'siti.staff@washwes.com',
-                'no_telp' => '081234567891',
-                'no_wa' => '081234567891',
-                'alamat' => 'Jl. Sudirman No. 45, Jakarta',
-                'foto' => null,
-                'status' => 'aktif',
-                'created_at' => now()->subDays(20),
-            ],
-            (object)[
-                'users_id' => 3,
-                'nama' => 'Ahmad Hidayat',
-                'email' => 'ahmad.staff@washwes.com',
-                'no_telp' => '081234567892',
-                'no_wa' => '081234567892',
-                'alamat' => 'Jl. Thamrin No. 78, Jakarta',
-                'foto' => null,
-                'status' => 'nonaktif',
-                'created_at' => now()->subDays(10),
-            ],
-        ]);
-
+        $perPage = $request->get('paginate', 15);
+        
+        $query = User::where('role', 'staff');
+        
         // Filter berdasarkan search
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
-            $dummyData = $dummyData->filter(function($item) use ($search) {
-                return str_contains(strtolower($item->nama), $search) ||
-                       str_contains(strtolower($item->email), $search);
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
-
+        
         // Filter berdasarkan status
         if ($request->filled('status')) {
-            $dummyData = $dummyData->where('status', $request->status);
+            $query->where('status', $request->status);
         }
-
-        // Pagination
-        $perPage = $request->get('paginate', 15);
-        $currentPage = $request->get('page', 1);
-        $items = $dummyData->slice(($currentPage - 1) * $perPage, $perPage)->values();
         
-        $staff = new LengthAwarePaginator(
-            $items,
-            $dummyData->count(),
-            $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
+        $staff = $query->orderBy('users_id', 'desc')->paginate($perPage);
+        
         return view('admin.staff.index', compact('staff'));
     }
 
     public function store(Request $request)
     {
-        // Validasi
         $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -94,23 +47,22 @@ class StaffController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // TODO: Save to database
-        // $staff = User::create([
-        //     'role' => 'staff',
-        //     'nama' => $request->nama,
-        //     'email' => $request->email,
-        //     'password' => Hash::make($request->password),
-        //     'no_telp' => $request->no_telp,
-        //     'no_wa' => $request->no_wa,
-        //     'alamat' => $request->alamat,
-        //     'status' => 'aktif',
-        // ]);
+        $staff = User::create([
+            'role' => 'staff',
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'no_telp' => $request->no_telp,
+            'no_wa' => $request->no_wa,
+            'alamat' => $request->alamat,
+            'status' => 'aktif',
+        ]);
 
-        // if ($request->hasFile('foto')) {
-        //     $path = $request->file('foto')->store('staff', 'public');
-        //     $staff->foto = $path;
-        //     $staff->save();
-        // }
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('staff', 'public');
+            $staff->foto = $path;
+            $staff->save();
+        }
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Staff berhasil ditambahkan');
@@ -118,7 +70,6 @@ class StaffController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Validasi
         $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id . ',users_id',
@@ -129,29 +80,30 @@ class StaffController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // TODO: Update database
-        // $staff = User::findOrFail($id);
-        // $staff->update([
-        //     'nama' => $request->nama,
-        //     'email' => $request->email,
-        //     'no_telp' => $request->no_telp,
-        //     'no_wa' => $request->no_wa,
-        //     'alamat' => $request->alamat,
-        // ]);
+        $staff = User::findOrFail($id);
+        
+        $staff->update([
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'no_telp' => $request->no_telp,
+            'no_wa' => $request->no_wa,
+            'alamat' => $request->alamat,
+        ]);
 
-        // if ($request->filled('password')) {
-        //     $staff->password = Hash::make($request->password);
-        //     $staff->save();
-        // }
+        if ($request->filled('password')) {
+            $staff->password = Hash::make($request->password);
+            $staff->save();
+        }
 
-        // if ($request->hasFile('foto')) {
-        //     if ($staff->foto) {
-        //         Storage::disk('public')->delete($staff->foto);
-        //     }
-        //     $path = $request->file('foto')->store('staff', 'public');
-        //     $staff->foto = $path;
-        //     $staff->save();
-        // }
+        if ($request->hasFile('foto')) {
+            // Hapus foto lama jika ada
+            if ($staff->foto) {
+                Storage::disk('public')->delete($staff->foto);
+            }
+            $path = $request->file('foto')->store('staff', 'public');
+            $staff->foto = $path;
+            $staff->save();
+        }
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Staff berhasil diupdate');
@@ -159,12 +111,14 @@ class StaffController extends Controller
 
     public function destroy($id)
     {
-        // TODO: Delete from database
-        // $staff = User::findOrFail($id);
-        // if ($staff->foto) {
-        //     Storage::disk('public')->delete($staff->foto);
-        // }
-        // $staff->delete();
+        $staff = User::findOrFail($id);
+        
+        // Hapus foto jika ada
+        if ($staff->foto) {
+            Storage::disk('public')->delete($staff->foto);
+        }
+        
+        $staff->delete();
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Staff berhasil dihapus');
@@ -172,10 +126,9 @@ class StaffController extends Controller
 
     public function toggleStatus($id)
     {
-        // TODO: Toggle status
-        // $staff = User::findOrFail($id);
-        // $staff->status = $staff->status == 'aktif' ? 'nonaktif' : 'aktif';
-        // $staff->save();
+        $staff = User::findOrFail($id);
+        $staff->status = $staff->status == 'aktif' ? 'nonaktif' : 'aktif';
+        $staff->save();
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Status staff berhasil diubah');

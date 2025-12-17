@@ -3,166 +3,42 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pelanggan;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
-class PelangganStaffController extends Controller
+class PelangganController extends Controller
 {
-    // Dummy data pelanggan
-    private function getAllPelanggan()
-    {
-        return collect([
-            (object)[
-                'id' => 1,
-                'nama' => 'Budi Santoso',
-                'email' => 'budi.santoso@email.com',
-                'no_telp' => '081234567890',
-                'alamat' => 'Jl. Merdeka No. 123, Jakarta Selatan',
-                'jenis_kelamin' => 'Laki-laki',
-                'tanggal_daftar' => '2024-01-15',
-                'total_transaksi' => 15,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 2,
-                'nama' => 'Siti Aminah',
-                'email' => 'siti.aminah@email.com',
-                'no_telp' => '082345678901',
-                'alamat' => 'Jl. Sudirman No. 45, Jakarta Pusat',
-                'jenis_kelamin' => 'Perempuan',
-                'tanggal_daftar' => '2024-02-10',
-                'total_transaksi' => 23,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 3,
-                'nama' => 'Ahmad Dahlan',
-                'email' => 'ahmad.dahlan@email.com',
-                'no_telp' => '083456789012',
-                'alamat' => 'Jl. Gatot Subroto No. 78, Jakarta Selatan',
-                'jenis_kelamin' => 'Laki-laki',
-                'tanggal_daftar' => '2024-03-05',
-                'total_transaksi' => 8,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 4,
-                'nama' => 'Rina Wati',
-                'email' => 'rina.wati@email.com',
-                'no_telp' => '084567890123',
-                'alamat' => 'Jl. Thamrin No. 90, Jakarta Pusat',
-                'jenis_kelamin' => 'Perempuan',
-                'tanggal_daftar' => '2024-04-20',
-                'total_transaksi' => 31,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 5,
-                'nama' => 'Joko Widodo',
-                'email' => 'joko.widodo@email.com',
-                'no_telp' => '085678901234',
-                'alamat' => 'Jl. Kuningan No. 12, Jakarta Selatan',
-                'jenis_kelamin' => 'Laki-laki',
-                'tanggal_daftar' => '2024-05-12',
-                'total_transaksi' => 12,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 6,
-                'nama' => 'Dewi Lestari',
-                'email' => 'dewi.lestari@email.com',
-                'no_telp' => '086789012345',
-                'alamat' => 'Jl. Casablanca No. 56, Jakarta Selatan',
-                'jenis_kelamin' => 'Perempuan',
-                'tanggal_daftar' => '2024-06-08',
-                'total_transaksi' => 5,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 7,
-                'nama' => 'Hendra Gunawan',
-                'email' => 'hendra.gunawan@email.com',
-                'no_telp' => '087890123456',
-                'alamat' => 'Jl. Rasuna Said No. 34, Jakarta Selatan',
-                'jenis_kelamin' => 'Laki-laki',
-                'tanggal_daftar' => '2024-07-22',
-                'total_transaksi' => 19,
-                'status' => 'nonaktif'
-            ],
-            (object)[
-                'id' => 8,
-                'nama' => 'Maya Sari',
-                'email' => 'maya.sari@email.com',
-                'no_telp' => '088901234567',
-                'alamat' => 'Jl. TB Simatupang No. 89, Jakarta Selatan',
-                'jenis_kelamin' => 'Perempuan',
-                'tanggal_daftar' => '2024-08-15',
-                'total_transaksi' => 27,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 9,
-                'nama' => 'Bambang Suryanto',
-                'email' => 'bambang.suryanto@email.com',
-                'no_telp' => '089012345678',
-                'alamat' => 'Jl. HR Rasuna Said No. 100, Jakarta Selatan',
-                'jenis_kelamin' => 'Laki-laki',
-                'tanggal_daftar' => '2024-09-10',
-                'total_transaksi' => 3,
-                'status' => 'aktif'
-            ],
-            (object)[
-                'id' => 10,
-                'nama' => 'Putri Handayani',
-                'email' => 'putri.handayani@email.com',
-                'no_telp' => '081123456789',
-                'alamat' => 'Jl. Senopati No. 67, Jakarta Selatan',
-                'jenis_kelamin' => 'Perempuan',
-                'tanggal_daftar' => '2024-10-05',
-                'total_transaksi' => 14,
-                'status' => 'aktif'
-            ],
-        ]);
-    }
-
     public function index(Request $request)
     {
         $perPage = $request->get('paginate', 15);
-        $currentPage = $request->get('page', 1);
         
-        $allData = $this->getAllPelanggan();
+        $query = Pelanggan::with('user');
         
         // Filter berdasarkan search
         if ($request->filled('search')) {
-            $search = strtolower($request->search);
-            $allData = $allData->filter(function($item) use ($search) {
-                return str_contains(strtolower($item->nama), $search) ||
-                       str_contains(strtolower($item->no_telp), $search) ||
-                       str_contains(strtolower($item->email), $search);
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('no_telp', 'like', "%{$search}%")
+                  ->orWhere('no_wa', 'like', "%{$search}%");
             });
         }
         
         // Filter berdasarkan status
         if ($request->filled('status')) {
-            $allData = $allData->filter(function($item) use ($request) {
-                return $item->status === $request->status;
-            });
+            $query->where('status', $request->status);
         }
         
-        // Buat paginator manual
-        $total = $allData->count();
-        $items = $allData->forPage($currentPage, $perPage)->values();
+        // Filter berdasarkan kategori
+        if ($request->filled('kategori_pelanggan')) {
+            $query->where('kategori_pelanggan', $request->kategori_pelanggan);
+        }
         
-        $pelanggan = new LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            [
-                'path' => $request->url(),
-                'query' => $request->query()
-            ]
-        );
+        $pelanggan = $query->orderBy('pelanggan_id', 'desc')->paginate($perPage);
         
         return view('staff.pelanggan.index', compact('pelanggan'));
     }
@@ -174,34 +50,220 @@ class PelangganStaffController extends Controller
 
     public function store(Request $request)
     {
-        // Simulasi simpan data
-        return redirect()->route('staff.pelanggan.index')
-            ->with('success', 'Data pelanggan berhasil ditambahkan!');
+        $request->validate([
+            'nama' => 'required|string|max:100',
+            'kategori_pelanggan' => 'required|in:member,reguler',
+            'no_telp' => 'required|string|max:20',
+            'no_wa' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            
+            // Jika member, perlu email & password
+            'email' => 'required_if:kategori_pelanggan,member|nullable|email|unique:users,email',
+            'password' => 'required_if:kategori_pelanggan,member|nullable|string|min:6|confirmed',
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $userId = null;
+            
+            // Jika kategori member, buat user account
+            if ($request->kategori_pelanggan === 'member') {
+                $user = User::create([
+                    'role' => 'pelanggan',
+                    'nama' => $request->nama,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'no_telp' => $request->no_telp,
+                    'no_wa' => $request->no_wa,
+                    'alamat' => $request->alamat,
+                    'status' => 'aktif'
+                ]);
+                
+                $userId = $user->users_id;
+            }
+            
+            // Buat pelanggan
+            $pelanggan = Pelanggan::create([
+                'users_id' => $userId,
+                'kategori_pelanggan' => $request->kategori_pelanggan,
+                'nama' => $request->nama,
+                'no_telp' => $request->no_telp,
+                'no_wa' => $request->no_wa,
+                'alamat' => $request->alamat,
+                'status' => 'aktif'
+            ]);
+            
+            // Upload foto jika ada
+            if ($request->hasFile('foto')) {
+                $path = $request->file('foto')->store('pelanggan', 'public');
+                $pelanggan->foto = $path;
+                $pelanggan->save();
+                
+                // Update foto di user juga jika member
+                if ($userId) {
+                    $user->foto = $path;
+                    $user->save();
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('staff.pelanggan.index')
+                ->with('success', 'Data pelanggan berhasil ditambahkan!');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal menambahkan pelanggan: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function show($id)
+    {
+        $pelanggan = Pelanggan::with(['user', 'cucian' => function($q) {
+            $q->orderBy('tgl_order', 'desc')->take(10);
+        }])->findOrFail($id);
+        
+        // Statistik pelanggan
+        $totalOrder = $pelanggan->cucian()->count();
+        $totalSpending = $pelanggan->cucian()->sum('total_harga');
+        $orderSelesai = $pelanggan->cucian()->where('status_cucian', 'selesai')->count();
+        
+        return view('staff.pelanggan.detail', compact('pelanggan', 'totalOrder', 'totalSpending', 'orderSelesai'));
     }
 
     public function edit($id)
     {
-        $pelanggan = $this->getAllPelanggan()->firstWhere('id', $id);
-        
-        if (!$pelanggan) {
-            return redirect()->route('staff.pelanggan.index')
-                ->with('error', 'Data pelanggan tidak ditemukan!');
-        }
-        
+        $pelanggan = Pelanggan::with('user')->findOrFail($id);
         return view('staff.pelanggan.edit', compact('pelanggan'));
     }
 
     public function update(Request $request, $id)
     {
-        // Simulasi update data
-        return redirect()->route('staff.pelanggan.index')
-            ->with('success', 'Data pelanggan berhasil diupdate!');
+        $pelanggan = Pelanggan::findOrFail($id);
+        
+        $request->validate([
+            'nama' => 'required|string|max:100',
+            'no_telp' => 'required|string|max:20',
+            'no_wa' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            
+            // Jika member dan ada user
+            'email' => $pelanggan->users_id ? 'required|email|unique:users,email,' . $pelanggan->users_id . ',users_id' : 'nullable',
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            // Update pelanggan
+            $pelanggan->update([
+                'nama' => $request->nama,
+                'no_telp' => $request->no_telp,
+                'no_wa' => $request->no_wa,
+                'alamat' => $request->alamat
+            ]);
+            
+            // Update user jika ada
+            if ($pelanggan->users_id && $pelanggan->user) {
+                $pelanggan->user->update([
+                    'nama' => $request->nama,
+                    'email' => $request->email,
+                    'no_telp' => $request->no_telp,
+                    'no_wa' => $request->no_wa,
+                    'alamat' => $request->alamat
+                ]);
+                
+                // Update password jika diisi
+                if ($request->filled('password')) {
+                    $pelanggan->user->password = Hash::make($request->password);
+                    $pelanggan->user->save();
+                }
+            }
+            
+            // Upload foto baru jika ada
+            if ($request->hasFile('foto')) {
+                // Hapus foto lama
+                if ($pelanggan->foto) {
+                    Storage::disk('public')->delete($pelanggan->foto);
+                }
+                
+                $path = $request->file('foto')->store('pelanggan', 'public');
+                $pelanggan->foto = $path;
+                $pelanggan->save();
+                
+                // Update foto di user juga
+                if ($pelanggan->user) {
+                    $pelanggan->user->foto = $path;
+                    $pelanggan->user->save();
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('staff.pelanggan.index')
+                ->with('success', 'Data pelanggan berhasil diupdate!');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal update pelanggan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function destroy($id)
     {
-        // Simulasi hapus data
+        $pelanggan = Pelanggan::findOrFail($id);
+        
+        // Cek apakah pelanggan punya cucian
+        if ($pelanggan->cucian()->count() > 0) {
+            return redirect()->route('staff.pelanggan.index')
+                ->with('error', 'Pelanggan tidak dapat dihapus karena memiliki riwayat cucian!');
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Hapus foto jika ada
+            if ($pelanggan->foto) {
+                Storage::disk('public')->delete($pelanggan->foto);
+            }
+            
+            // Hapus user jika ada
+            if ($pelanggan->users_id && $pelanggan->user) {
+                $pelanggan->user->delete();
+            }
+            
+            // Hapus pelanggan
+            $pelanggan->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('staff.pelanggan.index')
+                ->with('success', 'Data pelanggan berhasil dihapus!');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus pelanggan: ' . $e->getMessage());
+        }
+    }
+    
+    public function toggleStatus($id)
+    {
+        $pelanggan = Pelanggan::findOrFail($id);
+        $pelanggan->status = $pelanggan->status == 'aktif' ? 'nonaktif' : 'aktif';
+        $pelanggan->save();
+        
+        // Update status di user juga jika ada
+        if ($pelanggan->user) {
+            $pelanggan->user->status = $pelanggan->status;
+            $pelanggan->user->save();
+        }
+        
         return redirect()->route('staff.pelanggan.index')
-            ->with('success', 'Data pelanggan berhasil dihapus!');
+            ->with('success', 'Status pelanggan berhasil diubah!');
     }
 }

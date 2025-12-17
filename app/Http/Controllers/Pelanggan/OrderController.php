@@ -3,169 +3,253 @@
 namespace App\Http\Controllers\Pelanggan;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cucian;
+use App\Models\CucianDetail;
+use App\Models\Pelanggan;
+use App\Models\Layanan;
+use App\Models\ListHarga;
+use App\Models\Pembayaran;
+use App\Models\Penjemputan;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    private static $orders = [];
-    
-    public function __construct()
-    {
-        if (empty(self::$orders)) {
-            self::$orders = [
-                1 => [
-                    'id' => 1,
-                    'no_order' => 'WW001',
-                    'tanggal_order' => '2024-12-08 09:00:00',
-                    'jenis_layanan' => 'Cuci + Setrika Express',
-                    'berat' => 3.5,
-                    'total_harga' => 35000,
-                    'status' => 'proses',
-                    'estimasi_selesai' => '2024-12-09 17:00:00',
-                    'catatan' => 'Tolong hati-hati dengan baju putih',
-                    'metode_pembayaran' => 'cash',
-                    'status_pembayaran' => 'belum_bayar',
-                    'jenis_pengambilan' => 'diantar',
-                    'alamat_pengambilan' => 'Jl. Merdeka No. 123, Jakarta Selatan'
-                ],
-                2 => [
-                    'id' => 2,
-                    'no_order' => 'WW002',
-                    'tanggal_order' => '2024-12-07 14:30:00',
-                    'jenis_layanan' => 'Cuci Kering',
-                    'berat' => 5.0,
-                    'total_harga' => 40000,
-                    'status' => 'selesai',
-                    'estimasi_selesai' => '2024-12-08 14:30:00',
-                    'catatan' => '',
-                    'metode_pembayaran' => 'transfer',
-                    'status_pembayaran' => 'sudah_bayar',
-                    'jenis_pengambilan' => 'ambil_sendiri',
-                    'alamat_pengambilan' => ''
-                ],
-                3 => [
-                    'id' => 3,
-                    'no_order' => 'WW003',
-                    'tanggal_order' => '2024-12-06 10:15:00',
-                    'jenis_layanan' => 'Setrika Saja',
-                    'berat' => 2.0,
-                    'total_harga' => 15000,
-                    'status' => 'diambil',
-                    'estimasi_selesai' => '2024-12-07 10:15:00',
-                    'catatan' => '',
-                    'metode_pembayaran' => 'cash',
-                    'status_pembayaran' => 'sudah_bayar',
-                    'jenis_pengambilan' => 'diantar',
-                    'alamat_pengambilan' => 'Jl. Sudirman No. 45, Jakarta Pusat'
-                ],
-                4 => [
-                    'id' => 4,
-                    'no_order' => 'WW004',
-                    'tanggal_order' => '2024-12-05 08:20:00',
-                    'jenis_layanan' => 'Cuci + Setrika',
-                    'berat' => 4.5,
-                    'total_harga' => 45000,
-                    'status' => 'selesai',
-                    'estimasi_selesai' => '2024-12-07 08:20:00',
-                    'catatan' => '',
-                    'metode_pembayaran' => 'transfer',
-                    'status_pembayaran' => 'sudah_bayar',
-                    'jenis_pengambilan' => 'ambil_sendiri',
-                    'alamat_pengambilan' => ''
-                ],
-                5 => [
-                    'id' => 5,
-                    'no_order' => 'WW005',
-                    'tanggal_order' => '2024-12-04 13:10:00',
-                    'jenis_layanan' => 'Cuci Kering',
-                    'berat' => 6.0,
-                    'total_harga' => 48000,
-                    'status' => 'menunggu',
-                    'estimasi_selesai' => '2024-12-06 13:10:00',
-                    'catatan' => '',
-                    'metode_pembayaran' => 'cash',
-                    'status_pembayaran' => 'belum_bayar',
-                    'jenis_pengambilan' => 'diantar',
-                    'alamat_pengambilan' => 'Jl. Gatot Subroto No. 78, Jakarta Selatan'
-                ],
-            ];
-        }
-    }
-    
     public function index(Request $request)
     {
-        $perPage = $request->get('paginate', 10);
-        $currentPage = $request->get('page', 1);
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
         
-        $allData = collect(self::$orders)->map(function($item) {
-            return (object)$item;
-        });
+        if (!$pelanggan) {
+            return redirect()->route('home')
+                ->with('error', 'Data pelanggan tidak ditemukan!');
+        }
+        
+        $perPage = $request->get('paginate', 10);
+        
+        $query = Cucian::with(['layanan', 'pembayaran', 'detail.listHarga'])
+            ->where('pelanggan_id', $pelanggan->pelanggan_id);
         
         // Filter berdasarkan status
         if ($request->filled('status')) {
-            $allData = $allData->filter(function($item) use ($request) {
-                return $item->status === $request->status;
-            });
+            $query->where('status_cucian', $request->status);
         }
         
-        // Sort by date descending
-        $allData = $allData->sortByDesc('tanggal_order')->values();
-        
-        $total = $allData->count();
-        $items = $allData->forPage($currentPage, $perPage)->values();
-        
-        $orders = new LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            [
-                'path' => $request->url(),
-                'query' => $request->query()
-            ]
-        );
+        $orders = $query->orderBy('tgl_order', 'desc')->paginate($perPage);
         
         return view('pelanggan.order.index', compact('orders'));
     }
     
     public function show($id)
     {
-        if (!isset(self::$orders[$id])) {
-            return redirect()->route('pelanggan.order.index')
-                ->with('error', 'Order tidak ditemukan!');
-        }
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
         
-        $order = (object)self::$orders[$id];
+        $order = Cucian::with([
+            'layanan',
+            'detail.listHarga',
+            'pembayaran',
+            'pelanggan'
+        ])
+        ->where('cucian_id', $id)
+        ->where('pelanggan_id', $pelanggan->pelanggan_id)
+        ->firstOrFail();
         
         return view('pelanggan.order.detail', compact('order'));
     }
     
     public function create()
     {
-        // Dummy data layanan
-        $layanan = collect([
-            (object)['id' => 1, 'nama' => 'Cuci + Setrika Express', 'harga' => 10000, 'durasi' => 1],
-            (object)['id' => 2, 'nama' => 'Cuci + Setrika Reguler', 'harga' => 7000, 'durasi' => 3],
-            (object)['id' => 3, 'nama' => 'Cuci Lipat', 'harga' => 5000, 'durasi' => 2],
-            (object)['id' => 4, 'nama' => 'Setrika Saja', 'harga' => 4000, 'durasi' => 1],
-        ]);
+        // Ambil layanan yang tersedia
+        $layanan = Layanan::orderBy('nama_layanan')->get();
         
-        return view('pelanggan.order.create', compact('layanan'));
+        // Ambil list harga (untuk pilihan item jika diperlukan)
+        $listHarga = ListHarga::orderBy('nama_item')->get();
+        
+        // Ambil data pelanggan untuk alamat default
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        
+        return view('pelanggan.order.create', compact('layanan', 'listHarga', 'pelanggan'));
     }
     
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        
+        if (!$pelanggan) {
+            return redirect()->back()
+                ->with('error', 'Data pelanggan tidak ditemukan!');
+        }
+        
         $request->validate([
-            'jenis_layanan' => 'required',
-            'berat' => 'required|numeric|min:0.5',
-            'jenis_pengambilan' => 'required|in:diantar,ambil_sendiri',
-            'alamat_pengambilan' => 'required_if:jenis_pengambilan,diantar',
-            'metode_pembayaran' => 'required|in:cash,transfer'
+            'layanan_id' => 'required|exists:layanan,layanan_id',
+            'jenis_ambil' => 'required|in:diantar,ambil_sendiri',
+            'alamat_jemput' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.list_harga_id' => 'required|exists:list_harga,list_harga_id',
+            'items.*.jumlah' => 'nullable|integer|min:1',
+            'items.*.berat_kg' => 'nullable|numeric|min:0',
+            'metode_bayar' => 'required|in:cash,transfer',
+            'catatan' => 'nullable|string'
         ]);
         
-        // Simulasi create order
-        return redirect()->route('pelanggan.order.index')
-            ->with('success', 'Order berhasil dibuat!');
+        DB::beginTransaction();
+        try {
+            // Hitung total harga dan item
+            $totalHarga = 0;
+            $totalItem = count($request->items);
+            $totalBerat = 0;
+            
+            foreach ($request->items as $item) {
+                $listHarga = ListHarga::find($item['list_harga_id']);
+                
+                if (isset($item['berat_kg']) && $item['berat_kg'] > 0) {
+                    $totalBerat += $item['berat_kg'];
+                    $totalHarga += $item['berat_kg'] * $listHarga->harga_kiloan;
+                } else {
+                    $jumlah = $item['jumlah'] ?? 1;
+                    $totalHarga += $jumlah * $listHarga->harga_satuan;
+                }
+            }
+            
+            // Ambil layanan untuk hitung estimasi
+            $layanan = Layanan::find($request->layanan_id);
+            $estimasi = now()->addDays($layanan->durasi_hari);
+            
+            // Buat cucian (order online)
+            $cucian = Cucian::create([
+                'pelanggan_id' => $pelanggan->pelanggan_id,
+                'layanan_id' => $request->layanan_id,
+                'jenis_order' => 'online',
+                'jenis_ambil' => $request->jenis_ambil,
+                'tgl_order' => now(),
+                'estimasi' => $estimasi,
+                'total_item' => $totalItem,
+                'total_berat' => $totalBerat > 0 ? $totalBerat : null,
+                'total_harga' => $totalHarga,
+                'status_cucian' => 'menunggu',
+                'catatan' => $request->catatan
+            ]);
+            
+            // Buat detail cucian
+            foreach ($request->items as $item) {
+                CucianDetail::create([
+                    'cucian_id' => $cucian->cucian_id,
+                    'list_harga_id' => $item['list_harga_id'],
+                    'jumlah' => $item['jumlah'] ?? 1,
+                    'berat_kg' => $item['berat_kg'] ?? null,
+                    'deskripsi' => $item['deskripsi'] ?? null
+                ]);
+            }
+            
+            // Buat pembayaran
+            Pembayaran::create([
+                'cucian_id' => $cucian->cucian_id,
+                'metode_bayar' => $request->metode_bayar,
+                'status_bayar' => 'belum',
+                'jumlah_bayar' => $totalHarga
+            ]);
+            
+            // Buat penjemputan (karena order online perlu dijemput)
+            Penjemputan::create([
+                'cucian_id' => $cucian->cucian_id,
+                'alamat_jemput' => $request->alamat_jemput,
+                'status' => 'menunggu',
+                'tgl_order' => now(),
+                'catatan' => 'Order online - Menunggu penjemputan'
+            ]);
+            
+            DB::commit();
+            
+            return redirect()->route('pelanggan.order.index')
+                ->with('success', 'Order berhasil dibuat! Silakan tunggu konfirmasi penjemputan.');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal membuat order: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+    
+    // Upload bukti pembayaran
+    public function uploadBukti(Request $request, $id)
+    {
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        
+        $cucian = Cucian::where('cucian_id', $id)
+            ->where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->firstOrFail();
+        
+        $request->validate([
+            'bukti_bayar' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $pembayaran = $cucian->pembayaran;
+            
+            if (!$pembayaran) {
+                return redirect()->back()
+                    ->with('error', 'Data pembayaran tidak ditemukan!');
+            }
+            
+            // Hapus bukti lama jika ada
+            if ($pembayaran->bukti_bayar) {
+                Storage::disk('public')->delete($pembayaran->bukti_bayar);
+            }
+            
+            // Upload bukti baru
+            $path = $request->file('bukti_bayar')->store('bukti_bayar', 'public');
+            
+            $pembayaran->bukti_bayar = $path;
+            $pembayaran->tgl_bayar = now();
+            $pembayaran->save();
+            
+            DB::commit();
+            
+            return redirect()->back()
+                ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi.');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal upload bukti: ' . $e->getMessage());
+        }
+    }
+    
+    // Cancel order (hanya jika status masih menunggu)
+    public function cancel($id)
+    {
+        $user = Auth::user();
+        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        
+        $cucian = Cucian::where('cucian_id', $id)
+            ->where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->firstOrFail();
+        
+        if ($cucian->status_cucian !== 'menunggu') {
+            return redirect()->back()
+                ->with('error', 'Order hanya bisa dibatalkan jika status masih menunggu!');
+        }
+        
+        DB::beginTransaction();
+        try {
+            $cucian->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('pelanggan.order.index')
+                ->with('success', 'Order berhasil dibatalkan!');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                ->with('error', 'Gagal membatalkan order: ' . $e->getMessage());
+        }
     }
 }
