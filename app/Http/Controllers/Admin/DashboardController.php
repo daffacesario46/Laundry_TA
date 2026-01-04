@@ -12,10 +12,9 @@ class DashboardController extends Controller
     {
         $perPage = $request->get('paginate', 15);
         
-        // Query cucian yang sudah selesai
+        // Query cucian yang sudah selesai atau diambil
         $query = Cucian::with(['pelanggan', 'layanan', 'detail.listHarga'])
-            ->where('status_cucian', 'selesai')
-            ->orWhere('status_cucian', 'diambil');
+            ->whereIn('status_cucian', ['selesai', 'diambil']);
         
         // Filter berdasarkan search
         if ($request->filled('search')) {
@@ -38,12 +37,12 @@ class DashboardController extends Controller
             $query->where('jenis_ambil', $request->jenis_ambil);
         }
         
-        // Order by tgl_selesai descending (terbaru dulu)
-        $cucian = $query->orderBy('tgl_selesai', 'desc')
+        // Order by tgl_diambil descending (terbaru dulu)
+        $cucian = $query->orderBy('tgl_diambil', 'desc')
                        ->orderBy('cucian_id', 'desc')
                        ->paginate($perPage);
         
-        $jenis_order = $request->query('jenis_order', 'Selesai');
+        $jenis_order = 'Selesai';
         
         return view('admin.dashboard.index', compact('cucian', 'jenis_order'));
     }

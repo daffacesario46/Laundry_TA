@@ -22,74 +22,54 @@
                         @csrf
                         
                         <div class="mb-4">
-                            <label class="form-label">Jenis Cucian <span class="text-danger">*</span></label>
-                            <select class="form-select @error('jenis_cucian') is-invalid @enderror" name="jenis_cucian" required>
-                                <option value="">Pilih Jenis Cucian</option>
-                                <option value="Kiloan" {{ old('jenis_cucian') == 'Kiloan' ? 'selected' : '' }}>Kiloan</option>
-                                <option value="Satuan" {{ old('jenis_cucian') == 'Satuan' ? 'selected' : '' }}>Satuan</option>
-                                <option value="Karpet" {{ old('jenis_cucian') == 'Karpet' ? 'selected' : '' }}>Karpet</option>
-                                <option value="Bed Cover" {{ old('jenis_cucian') == 'Bed Cover' ? 'selected' : '' }}>Bed Cover</option>
-                                <option value="Boneka" {{ old('jenis_cucian') == 'Boneka' ? 'selected' : '' }}>Boneka</option>
-                            </select>
-                            @error('jenis_cucian')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Layanan <span class="text-danger">*</span></label>
+                            <label class="form-label">Nama Item <span class="text-danger">*</span></label>
                             <input type="text" 
-                                   class="form-control @error('layanan') is-invalid @enderror" 
-                                   name="layanan" 
-                                   placeholder="Contoh: Cuci + Setrika" 
-                                   value="{{ old('layanan') }}"
+                                   class="form-control @error('nama_item') is-invalid @enderror" 
+                                   name="nama_item" 
+                                   placeholder="Contoh: Kemeja, Celana Panjang, Jaket, dll" 
+                                   value="{{ old('nama_item') }}"
                                    required />
-                            @error('layanan')
+                            @error('nama_item')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">Masukkan nama item pakaian atau barang yang akan dicuci</small>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-4">
-                                <label class="form-label">Harga <span class="text-danger">*</span></label>
+                                <label class="form-label">Harga Satuan <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">Rp</span>
                                     <input type="number" 
-                                           class="form-control @error('harga') is-invalid @enderror" 
-                                           name="harga" 
+                                           class="form-control @error('harga_satuan') is-invalid @enderror" 
+                                           name="harga_satuan" 
                                            placeholder="0" 
-                                           value="{{ old('harga') }}"
+                                           value="{{ old('harga_satuan', 0) }}"
                                            min="0"
                                            required />
-                                    @error('harga')
+                                    @error('harga_satuan')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <small class="text-muted">Harga per pcs/item (wajib diisi, minimal 0)</small>
                             </div>
 
                             <div class="col-md-6 mb-4">
-                                <label class="form-label">Satuan <span class="text-danger">*</span></label>
-                                <select class="form-select @error('satuan') is-invalid @enderror" name="satuan" required>
-                                    <option value="">Pilih Satuan</option>
-                                    <option value="kg" {{ old('satuan') == 'kg' ? 'selected' : '' }}>Kilogram (kg)</option>
-                                    <option value="pcs" {{ old('satuan') == 'pcs' ? 'selected' : '' }}>Pieces (pcs)</option>
-                                    <option value="unit" {{ old('satuan') == 'unit' ? 'selected' : '' }}>Unit</option>
-                                </select>
-                                @error('satuan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <label class="form-label">Harga Kiloan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" 
+                                           class="form-control @error('harga_kiloan') is-invalid @enderror" 
+                                           name="harga_kiloan" 
+                                           placeholder="0 (opsional)" 
+                                           value="{{ old('harga_kiloan') }}"
+                                           min="0" />
+                                    @error('harga_kiloan')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="text-muted">Harga per kg (opsional, kosongkan jika tidak ada)</small>
                             </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Deskripsi</label>
-                            <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
-                                      name="deskripsi" 
-                                      rows="4" 
-                                      placeholder="Deskripsi layanan (opsional)">{{ old('deskripsi') }}</textarea>
-                            @error('deskripsi')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <div class="d-flex gap-2">
@@ -111,14 +91,35 @@
                     <h5 class="card-title">Informasi</h5>
                     <p class="text-muted small">
                         <i class="material-icons md-info text-info"></i>
-                        Pastikan harga yang Anda masukkan sudah sesuai dengan jenis layanan dan satuan yang dipilih.
+                        List harga digunakan untuk menentukan harga cucian per item atau per kilogram.
                     </p>
                     <hr>
-                    <p class="text-muted small mb-2"><strong>Tips:</strong></p>
+                    <p class="text-muted small mb-2"><strong>Panduan:</strong></p>
                     <ul class="text-muted small">
-                        <li>Gunakan harga yang kompetitif</li>
-                        <li>Satuan harus sesuai dengan jenis cucian</li>
-                        <li>Deskripsi membantu customer memahami layanan</li>
+                        <li><strong>Harga Satuan:</strong> Harga per item/pcs (wajib diisi)</li>
+                        <li><strong>Harga Kiloan:</strong> Harga per kg (opsional, untuk layanan kiloan)</li>
+                        <li>Contoh: Kemeja bisa punya harga satuan Rp 7.000/pcs</li>
+                        <li>Atau: Cuci Kiloan Regular Rp 7.000/kg</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Contoh Item</h5>
+                    <ul class="text-muted small">
+                        <li>Kemeja / Blouse</li>
+                        <li>Celana Panjang</li>
+                        <li>Celana Pendek</li>
+                        <li>Kaos / T-Shirt</li>
+                        <li>Jaket Tipis</li>
+                        <li>Jaket Tebal</li>
+                        <li>Rok</li>
+                        <li>Dress / Gaun</li>
+                        <li>Jas / Blazer</li>
+                        <li>Selimut</li>
+                        <li>Bed Cover</li>
+                        <li>Boneka</li>
                     </ul>
                 </div>
             </div>

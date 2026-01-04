@@ -9,6 +9,21 @@
         </div>
     </div>
 
+    {{-- Alert Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="material-icons md-check_circle"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="material-icons md-error"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-lg-3">
@@ -59,6 +74,7 @@
                     <div class="text">
                         <h6 class="mb-1">Sudah Diambil</h6>
                         <span class="h4">{{ $totalDiambil }}</span>
+                        <small class="text-muted">(Hari ini)</small>
                     </div>
                 </article>
             </div>
@@ -68,137 +84,149 @@
     <!-- Filter & Search -->
     <div class="card mb-4">
         <header class="card-header">
-            <div class="row gx-3">
-                <div class="col-lg-4 col-md-6 me-auto">
-                    <form method="GET" action="{{ route('staff.status-cucian.index') }}">
-                        <input type="text" name="search" placeholder="Cari no order atau nama pelanggan..." 
-                               class="form-control" value="{{ request('search') }}">
-                    </form>
-                </div>
-                <div class="col-lg-2 col-6 col-md-3">
-                    <form method="GET" action="{{ route('staff.status-cucian.index') }}">
-                        <select class="form-select" name="status" onchange="this.form.submit()">
+            <form action="{{ route('staff.status-cucian.index') }}" method="GET">
+                <div class="row gx-3">
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <input type="text" name="search" 
+                               placeholder="Cari no order atau nama pelanggan..." 
+                               class="form-control" 
+                               value="{{ request('search') }}">
+                    </div>
+                    <div class="col-lg-2 col-md-3 mb-3">
+                        <select class="form-select" name="status">
                             <option value="">Semua Status</option>
                             <option value="menunggu" {{ request('status') == 'menunggu' ? 'selected' : '' }}>Menunggu</option>
-                            <option value="proses" {{ request('status') == 'proses' ? 'selected' : '' }}>Proses</option>
+                            <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>Diproses</option>
                             <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
-                            <option value="diambil" {{ request('status') == 'diambil' ? 'selected' : '' }}>Diambil</option>
                         </select>
-                    </form>
-                </div>
-                <div class="col-lg-2 col-6 col-md-3">
-                    <form method="GET" action="{{ route('staff.status-cucian.index') }}">
-                        <select class="form-select" name="paginate" onchange="this.form.submit()">
-                            <option value="15" {{ request('paginate') == 15 ? 'selected' : '' }}>Show 15</option>
+                    </div>
+                    <div class="col-lg-2 col-md-3 mb-3">
+                        <select class="form-select" name="paginate">
+                            <option value="15" {{ request('paginate', 15) == 15 ? 'selected' : '' }}>Show 15</option>
                             <option value="30" {{ request('paginate') == 30 ? 'selected' : '' }}>Show 30</option>
                             <option value="50" {{ request('paginate') == 50 ? 'selected' : '' }}>Show 50</option>
                         </select>
-                    </form>
+                    </div>
+                    <div class="col-lg-2 col-md-3 mb-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="material-icons md-search"></i> Cari
+                        </button>
+                    </div>
+                    @if(request()->anyFilled(['search', 'status']))
+                        <div class="col-lg-2 col-md-3 mb-3">
+                            <a href="{{ route('staff.status-cucian.index') }}" class="btn btn-light w-100">
+                                <i class="material-icons md-refresh"></i> Reset
+                            </a>
+                        </div>
+                    @endif
                 </div>
-            </div>
+            </form>
         </header>
 
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>No Order</th>
-                            <th>Pelanggan</th>
-                            <th>Layanan</th>
-                            <th>Berat</th>
-                            <th>Tanggal Masuk</th>
-                            <th>Estimasi Selesai</th>
-                            <th>Status</th>
-                            <th class="text-end">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($cucian as $item)
-                        <tr>
-                            <td><b>{{ $item->no_order }}</b></td>
-                            <td>
-                                <b>{{ $item->nama_pelanggan }}</b><br>
-                                <small class="text-muted">
-                                    <i class="material-icons md-phone" style="font-size: 14px;"></i> 
-                                    {{ $item->no_telp }}
-                                </small>
-                            </td>
-                            <td>{{ $item->jenis_layanan }}</td>
-                            <td>{{ $item->berat }} Kg</td>
-                            <td>{{ \Carbon\Carbon::parse($item->tanggal_masuk)->format('d/m/Y H:i') }}</td>
-                            <td>
-                                {{ \Carbon\Carbon::parse($item->estimasi_selesai)->format('d/m/Y H:i') }}<br>
-                                <small class="text-muted">
-                                    {{ \Carbon\Carbon::parse($item->estimasi_selesai)->diffForHumans() }}
-                                </small>
-                            </td>
-                            <td>
-                                @if($item->status == 'menunggu')
-                                    <span class="badge rounded-pill alert-warning">
-                                        <i class="material-icons md-pending_actions" style="font-size: 14px;"></i> 
-                                        Menunggu
+            @if($cucian->isEmpty())
+                <div class="alert alert-info text-center py-5">
+                    <i class="material-icons md-inbox" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-0">
+                        @if(request()->filled('search') || request()->filled('status'))
+                            Tidak ada cucian yang sesuai filter
+                        @else
+                            Tidak ada cucian yang perlu diproses
+                        @endif
+                    </p>
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>No Order</th>
+                                <th>Pelanggan</th>
+                                <th>Layanan</th>
+                                <th>Berat/Item</th>
+                                <th>Total Harga</th>
+                                <th>Tanggal Order</th>
+                                <th>Estimasi</th>
+                                <th>Status</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($cucian as $item)
+                            <tr>
+                                <td><b>{{ $item->getNoOrder() }}</b></td>
+                                <td>
+                                    <b>{{ $item->pelanggan->nama ?? 'N/A' }}</b><br>
+                                    <small class="text-muted">
+                                        <i class="material-icons md-phone" style="font-size: 14px;"></i> 
+                                        {{ $item->pelanggan->no_telp ?? '-' }}
+                                    </small>
+                                </td>
+                                <td>{{ $item->layanan->nama_layanan ?? '-' }}</td>
+                                <td>
+                                    @if($item->total_berat)
+                                        {{ number_format($item->total_berat, 1) }} Kg
+                                    @else
+                                        {{ $item->total_item }} item
+                                    @endif
+                                </td>
+                                <td>{{ $item->getFormattedTotalHarga() }}</td>
+                                <td>{{ $item->tgl_order->format('d/m/Y H:i') }}</td>
+                                <td>
+                                    @if($item->estimasi)
+                                        {{ \Carbon\Carbon::parse($item->estimasi)->format('d/m/Y H:i') }}<br>
+                                        <small class="text-muted">
+                                            {{ \Carbon\Carbon::parse($item->estimasi)->diffForHumans() }}
+                                        </small>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill {{ $item->getStatusBadge() }}">
+                                        {{ $item->getStatusLabel() }}
                                     </span>
-                                @elseif($item->status == 'proses')
-                                    <span class="badge rounded-pill alert-info">
-                                        <i class="material-icons md-autorenew" style="font-size: 14px;"></i> 
-                                        Proses
-                                    </span>
-                                @elseif($item->status == 'selesai')
-                                    <span class="badge rounded-pill alert-success">
-                                        <i class="material-icons md-check_circle" style="font-size: 14px;"></i> 
-                                        Selesai
-                                    </span>
-                                @elseif($item->status == 'diambil')
-                                    <span class="badge rounded-pill alert-secondary">
-                                        <i class="material-icons md-done_all" style="font-size: 14px;"></i> 
-                                        Diambil
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="text-end">
-                                @if($item->status == 'menunggu')
-                                    <button class="btn btn-sm btn-success" onclick="updateStatus({{ $item->id }}, 'proses', '{{ $item->no_order }}')">
-                                        <i class="material-icons md-play_arrow"></i> Proses
-                                    </button>
-                                @elseif($item->status == 'proses')
-                                    <button class="btn btn-sm btn-primary" onclick="updateStatus({{ $item->id }}, 'selesai', '{{ $item->no_order }}')">
-                                        <i class="material-icons md-check"></i> Selesai
-                                    </button>
-                                @elseif($item->status == 'selesai')
-                                    <button class="btn btn-sm btn-secondary" onclick="updateStatus({{ $item->id }}, 'diambil', '{{ $item->no_order }}')">
-                                        <i class="material-icons md-shopping_bag"></i> Diambil
-                                    </button>
-                                @else
-                                    <span class="badge bg-secondary">Selesai</span>
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center py-4">
-                                <img src="{{ asset('admins/imgs/theme/empty.png') }}" alt="No data" style="width: 100px;">
-                                <p class="text-muted mt-3">Belum ada data cucian</p>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                                <td class="text-end">
+                                    @if($item->status_cucian == 'menunggu')
+                                        <button class="btn btn-sm btn-info" 
+                                                onclick="updateStatus({{ $item->cucian_id }}, 'diproses', '{{ addslashes($item->getNoOrder()) }}')">
+                                            <i class="material-icons md-play_arrow"></i> Proses
+                                        </button>
+                                    @elseif($item->status_cucian == 'diproses')
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="updateStatus({{ $item->cucian_id }}, 'selesai', '{{ addslashes($item->getNoOrder()) }}')">
+                                            <i class="material-icons md-check"></i> Selesai
+                                        </button>
+                                    @elseif($item->status_cucian == 'selesai')
+                                        <button class="btn btn-sm btn-primary" 
+                                                onclick="updateStatus({{ $item->cucian_id }}, 'diambil', '{{ addslashes($item->getNoOrder()) }}')">
+                                            <i class="material-icons md-shopping_bag"></i> Diambil
+                                        </button>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
 
-        <div class="card-footer">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p class="mb-0">Showing {{ $cucian->firstItem() ?? 0 }} to {{ $cucian->lastItem() ?? 0 }} of {{ $cucian->total() }} entries</p>
-                </div>
-                <div class="col-md-6">
-                    <nav class="float-end">
-                        {{ $cucian->links() }}
-                    </nav>
+        @if($cucian->hasPages())
+            <div class="card-footer">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0">Menampilkan {{ $cucian->firstItem() ?? 0 }} sampai {{ $cucian->lastItem() ?? 0 }} dari {{ $cucian->total() }} data</p>
+                    </div>
+                    <div class="col-md-6">
+                        <nav class="float-end">
+                            {{ $cucian->links() }}
+                        </nav>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
 
     <!-- Panduan Status -->
@@ -210,73 +238,77 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="text-center mb-3">
                         <span class="icon icon-sm rounded-circle bg-warning-light d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                             <i class="text-warning material-icons md-pending_actions" style="font-size: 28px;"></i>
                         </span>
                         <h6 class="mt-2">Menunggu</h6>
                         <p class="text-muted small">Cucian baru masuk, belum diproses</p>
-                        <button class="btn btn-sm btn-warning">Action: Proses</button>
+                        <span class="badge bg-info">Klik "Proses"</span>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="text-center mb-3">
                         <span class="icon icon-sm rounded-circle bg-info-light d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                             <i class="text-info material-icons md-autorenew" style="font-size: 28px;"></i>
                         </span>
-                        <h6 class="mt-2">Proses</h6>
+                        <h6 class="mt-2">Diproses</h6>
                         <p class="text-muted small">Cucian sedang dikerjakan</p>
-                        <button class="btn btn-sm btn-info">Action: Selesai</button>
+                        <span class="badge bg-success">Klik "Selesai"</span>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="text-center mb-3">
                         <span class="icon icon-sm rounded-circle bg-success-light d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                             <i class="text-success material-icons md-check_circle" style="font-size: 28px;"></i>
                         </span>
                         <h6 class="mt-2">Selesai</h6>
                         <p class="text-muted small">Cucian sudah selesai, siap diambil</p>
-                        <button class="btn btn-sm btn-success">Action: Diambil</button>
+                        <span class="badge bg-primary">Klik "Diambil"</span>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="text-center mb-3">
-                        <span class="icon icon-sm rounded-circle bg-secondary-light d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                            <i class="text-secondary material-icons md-done_all" style="font-size: 28px;"></i>
-                        </span>
-                        <h6 class="mt-2">Diambil</h6>
-                        <p class="text-muted small">Cucian sudah diambil pelanggan</p>
-                        <span class="badge bg-secondary">Selesai</span>
-                    </div>
-                </div>
+            </div>
+            
+            <hr class="my-3">
+            
+            <div class="alert alert-info mb-0">
+                <i class="material-icons md-info"></i>
+                <strong>Catatan:</strong> Cucian yang sudah ditandai "Diambil" akan hilang dari daftar ini dan bisa dilihat di menu "Data Cucian".
             </div>
         </div>
     </div>
 </section>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     function updateStatus(id, status, noOrder) {
         let statusText = {
-            'proses': 'Proses',
+            'diproses': 'Proses',
             'selesai': 'Selesai',
             'diambil': 'Diambil'
         };
 
         let icon = {
-            'proses': 'info',
+            'diproses': 'info',
             'selesai': 'success',
-            'diambil': 'success'
+            'diambil': 'question'
+        };
+
+        let confirmText = {
+            'diproses': `Mulai memproses cucian ${noOrder}?`,
+            'selesai': `Tandai cucian ${noOrder} sudah selesai?`,
+            'diambil': `Konfirmasi cucian ${noOrder} sudah diambil pelanggan?`
         };
 
         Swal.fire({
-            title: `Konfirmasi Status: ${statusText[status]}`,
-            text: `Ubah status cucian ${noOrder} menjadi ${statusText[status]}?`,
+            title: `Update Status: ${statusText[status]}`,
+            text: confirmText[status],
             icon: icon[status],
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Ubah!',
+            confirmButtonText: 'Ya, Update!',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {

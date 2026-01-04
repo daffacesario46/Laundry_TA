@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Penjemputan extends Model
 {
@@ -46,43 +47,33 @@ class Penjemputan extends Model
         return $this->status === 'menunggu';
     }
 
-    public function isDiproses()
-    {
-        return $this->status === 'diproses';
-    }
-
-    public function isSelesai()
-    {
-        return $this->status === 'selesai';
-    }
-
-    public function getStatusBadge()
-    {
-        $badges = [
-            'menunggu' => 'alert-warning',
-            'diproses' => 'alert-info',
-            'selesai' => 'alert-success'
-        ];
-        return $badges[$this->status] ?? 'alert-secondary';
-    }
-
-    public function getStatusLabel()
-    {
-        $labels = [
-            'menunggu' => 'Menunggu',
-            'diproses' => 'Sedang Dijemput',
-            'selesai' => 'Selesai'
-        ];
-        return $labels[$this->status] ?? 'Unknown';
-    }
-
     public function hasStaff()
     {
-        return !is_null($this->staff_id);
+        return !is_null($this->staff_id) && $this->staff;
     }
 
     public function getStaffNama()
     {
-        return $this->hasStaff() ? $this->staff->nama : 'Belum Ditugaskan';
+        return $this->staff ? $this->staff->nama : '-';
+    }
+
+    public function getStatusLabel()
+    {
+        return match($this->status) {
+            'menunggu' => 'Menunggu',
+            'diproses' => 'Sedang Dijemput',
+            'selesai' => 'Selesai',
+            default => $this->status
+        };
+    }
+
+    public function getStatusBadge()
+    {
+        return match($this->status) {
+            'menunggu' => 'bg-warning',
+            'diproses' => 'bg-info',
+            'selesai' => 'bg-success',
+            default => 'bg-secondary'
+        };
     }
 }

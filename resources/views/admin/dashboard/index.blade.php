@@ -8,8 +8,7 @@
             <p>Laporan Cucian {{ $jenis_order ?? 'Selesai' }}</p>
         </div>
         <div class="col-lg-4 col-md-6">
-            <form action="{{ route('admin.index') }}" method="GET" id="searchForm">
-                <!-- Hidden inputs untuk retain filter lain -->
+            <form action="{{ route('admin.dashboard') }}" method="GET" id="searchForm">
                 @if(request()->filled('jenis_order'))
                     <input type="hidden" name="jenis_order" value="{{ request()->jenis_order }}">
                 @endif
@@ -22,17 +21,17 @@
                 
                 <input type="text" 
                        name="search" 
-                       placeholder="Cari No. Order/Atas Nama/Nama User..." 
+                       placeholder="Cari No. Order/Nama Pelanggan..." 
                        class="form-control bg-white" 
                        id="search" 
                        value="{{ request()->query('search') }}" />
             </form>
         </div>
     </div>
+    
     <div class="card mb-4">
         <header class="card-header">
-            <form action="{{ route('admin.index') }}" method="GET">
-                <!-- Hidden search untuk retain search saat filter -->
+            <form action="{{ route('admin.dashboard') }}" method="GET">
                 @if(request()->filled('search'))
                     <input type="hidden" name="search" value="{{ request()->search }}">
                 @endif
@@ -49,7 +48,7 @@
                         <select class="form-select" name="jenis_ambil">
                             <option {{ request()->query('jenis_ambil') == '' ? 'selected' : '' }} value=''>Semua Jenis Ambil</option>
                             <option {{ request()->query('jenis_ambil') == 'diantar' ? 'selected' : '' }} value="diantar">Diantar</option>
-                            <option {{ request()->query('jenis_ambil') == 'ambil sendiri' ? 'selected' : '' }} value="ambil sendiri">Ambil Sendiri</option>
+                            <option {{ request()->query('jenis_ambil') == 'ambil_sendiri' ? 'selected' : '' }} value="ambil_sendiri">Ambil Sendiri</option>
                         </select>
                     </div>
                     <div class="col-lg-3 col-md-3 col-6">
@@ -64,7 +63,7 @@
                             <i class="material-icons md-filter_list"></i> Terapkan
                         </button>
                         @if(request()->anyFilled(['search', 'jenis_order', 'jenis_ambil', 'paginate']))
-                            <a href="{{ route('admin.index') }}" class="btn btn-sm btn-light">
+                            <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-light">
                                 <i class="material-icons md-close"></i> Reset
                             </a>
                         @endif
@@ -72,7 +71,7 @@
                 </div>
             </form>
         </header>
-        <!-- card-header end// -->
+        
         <div class="card-body">
             @if($cucian->isEmpty())
                 <div class="alert alert-info text-center">
@@ -88,8 +87,8 @@
                         <thead>
                             <tr>
                                 <th>No. Order</th>
-                                <th>User</th>
-                                <th>Atas Nama</th>
+                                <th>Nama Pelanggan</th>
+                                <th>Jenis Order</th>
                                 <th>Total Item</th>
                                 <th>Jenis Ambil</th>
                                 <th>Waktu Diambil</th>
@@ -99,18 +98,22 @@
                         <tbody>
                             @foreach($cucian as $c)
                             <tr>
-                                <td><strong>{{ $c->no_order }}</strong></td>
-                                <td>{{ $c->user->nama ?? '-' }}</td>
-                                <td>{{ $c->atas_nama }}</td>
+                                <td><strong>{{ $c->getNoOrder() }}</strong></td>
+                                <td>{{ $c->pelanggan->nama ?? '-' }}</td>
+                                <td>
+                                    <span class="badge {{ $c->jenis_order == 'online' ? 'bg-success' : 'bg-info' }}">
+                                        {{ ucfirst($c->jenis_order) }}
+                                    </span>
+                                </td>
                                 <td>{{ $c->total_item }}</td>
                                 <td>
                                     <span class="badge {{ $c->jenis_ambil == 'diantar' ? 'bg-primary' : 'bg-secondary' }}">
-                                        {{ ucfirst($c->jenis_ambil) }}
+                                        {{ ucfirst(str_replace('_', ' ', $c->jenis_ambil)) }}
                                     </span>
                                 </td>
-                                <td>{{ $c->wkt_diambil ? \Carbon\Carbon::parse($c->wkt_diambil)->format('d M Y H:i') : '-' }}</td>
+                                <td>{{ $c->tgl_diambil ? \Carbon\Carbon::parse($c->tgl_diambil)->format('d M Y H:i') : '-' }}</td>
                                 <td>
-                                    <a href="{{ route('admin.detail', $c->no_order) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('admin.dashboard.detail', $c->cucian_id) }}" class="btn btn-sm btn-primary">
                                         <i class="material-icons md-visibility"></i> Detail
                                     </a>
                                 </td>
@@ -120,9 +123,7 @@
                     </table>
                 </div>
             @endif
-            <!-- table-responsive//end -->
         </div>
-        <!-- card-body end// -->
     </div>
     
     @if($cucian->hasPages())
@@ -137,7 +138,6 @@
 </section>
 
 <script>
-    // Submit search form saat tekan Enter
     document.getElementById('search').addEventListener('keypress', function(e) {
         if(e.key === 'Enter') {
             e.preventDefault();

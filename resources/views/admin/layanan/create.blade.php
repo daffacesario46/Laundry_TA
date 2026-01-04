@@ -53,24 +53,14 @@
                                        class="form-control @error('durasi_hari') is-invalid @enderror" 
                                        name="durasi_hari" 
                                        placeholder="Contoh: 3" 
-                                       value="{{ old('durasi_hari') }}"
+                                       value="{{ old('durasi_hari', 3) }}"
                                        min="1"
                                        required />
                                 @error('durasi_hari')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <small class="text-muted">Estimasi waktu pengerjaan dalam hari</small>
                             </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select @error('status') is-invalid @enderror" name="status" required>
-                                <option value="aktif" {{ old('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
-                                <option value="nonaktif" {{ old('status') == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <div class="mb-4">
@@ -106,12 +96,20 @@
                         Pastikan nama layanan sudah sesuai dan durasi pengerjaan realistis.
                     </p>
                     <hr>
-                    <p class="text-muted small mb-2"><strong>Tips:</strong></p>
+                    <p class="text-muted small mb-2"><strong>Jenis Cucian:</strong></p>
                     <ul class="text-muted small">
-                        <li>Gunakan nama yang jelas dan mudah dipahami</li>
-                        <li>Durasi dalam hitungan hari kerja</li>
-                        <li>Set status "Aktif" untuk layanan yang tersedia</li>
-                        <li>Deskripsi membantu customer memahami layanan</li>
+                        <li><strong>Kiloan:</strong> Dihitung berdasarkan berat (kg)</li>
+                        <li><strong>Satuan:</strong> Dihitung per item/pcs</li>
+                    </ul>
+                    <hr>
+                    <p class="text-muted small mb-2"><strong>Contoh Layanan:</strong></p>
+                    <ul class="text-muted small">
+                        <li>Cuci Kering (kiloan)</li>
+                        <li>Cuci Setrika (kiloan)</li>
+                        <li>Cuci Setrika Express (kiloan)</li>
+                        <li>Setrika Saja (kiloan)</li>
+                        <li>Cuci Satuan Premium (satuan)</li>
+                        <li>Dry Cleaning (satuan)</li>
                     </ul>
                 </div>
             </div>

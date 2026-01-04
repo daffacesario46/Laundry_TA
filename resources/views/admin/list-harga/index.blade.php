@@ -21,7 +21,7 @@
                     <div class="col-lg-4 col-md-6 mb-3">
                         <input type="text" 
                                name="search" 
-                               placeholder="Cari layanan..." 
+                               placeholder="Cari nama item..." 
                                class="form-control" 
                                value="{{ request()->query('search') }}" />
                     </div>
@@ -63,10 +63,9 @@
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>Jenis Cucian</th>
-                                <th>Layanan</th>
-                                <th>Harga</th>
-                                <th>Satuan</th>
+                                <th>Nama Item</th>
+                                <th>Harga Satuan</th>
+                                <th>Harga Kiloan</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -74,22 +73,19 @@
                             @foreach($listHarga as $index => $item)
                             <tr>
                                 <td>{{ $listHarga->firstItem() + $index }}</td>
-                                <td>
-                                    <span class="badge bg-info">{{ $item->jenis_cucian }}</span>
-                                </td>
-                                <td><strong>{{ $item->layanan }}</strong></td>
-                                <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                                <td>{{ $item->satuan }}</td>
+                                <td><strong>{{ $item->nama_item }}</strong></td>
+                                <td>{{ $item->getFormattedHargaSatuan() }}</td>
+                                <td>{{ $item->getFormattedHargaKiloan() }}</td>
                                 <td>
                                     <div class="dropdown">
                                         <a href="#" data-bs-toggle="dropdown" class="btn btn-sm btn-light">
                                             <i class="material-icons md-more_horiz"></i>
                                         </a>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ route('admin.list-harga.edit', $item->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin.list-harga.edit', $item->list_harga_id) }}">
                                                 <i class="material-icons md-edit"></i> Edit
                                             </a>
-                                            <form action="{{ route('admin.list-harga.destroy', $item->id) }}" 
+                                            <form action="{{ route('admin.list-harga.destroy', $item->list_harga_id) }}" 
                                                   method="POST" 
                                                   onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                                 @csrf

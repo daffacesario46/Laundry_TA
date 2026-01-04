@@ -18,11 +18,16 @@ class CucianDetail extends Model
         'list_harga_id',
         'jumlah',
         'berat_kg',
+        'harga_satuan',
+        'harga_kiloan',
         'deskripsi'
     ];
 
     protected $casts = [
+        'jumlah' => 'integer',
         'berat_kg' => 'double',
+        'harga_satuan' => 'double',
+        'harga_kiloan' => 'double',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -41,14 +46,31 @@ class CucianDetail extends Model
     // Helpers
     public function getSubtotal()
     {
-        if ($this->berat_kg && $this->listHarga->harga_kiloan) {
-            return $this->berat_kg * $this->listHarga->harga_kiloan;
+        // Prioritas pakai harga historis dari detail
+        if ($this->berat_kg && $this->berat_kg > 0) {
+            // KILOAN
+            $harga = $this->harga_kiloan ?? $this->listHarga->harga_kiloan ?? 0;
+            return $this->berat_kg * $harga;
         }
-        return $this->jumlah * $this->listHarga->harga_satuan;
+        
+        // SATUAN
+        $harga = $this->harga_satuan ?? $this->listHarga->harga_satuan ?? 0;
+        $jumlah = $this->jumlah ?? 1;
+        return $jumlah * $harga;
     }
 
     public function getFormattedSubtotal()
     {
         return 'Rp ' . number_format($this->getSubtotal(), 0, ',', '.');
+    }
+
+    public function isSatuan()
+    {
+        return (!$this->berat_kg || $this->berat_kg == 0) && $this->jumlah > 0;
+    }
+
+    public function isKiloan()
+    {
+        return $this->berat_kg && $this->berat_kg > 0;
     }
 }

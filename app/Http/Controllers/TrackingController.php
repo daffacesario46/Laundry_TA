@@ -1,256 +1,189 @@
 <?php
 
-namespace App\Http\Controllers\Pelanggan;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Cucian;
-use App\Models\CucianDetail;
-use App\Models\Pelanggan;
-use App\Models\Layanan;
-use App\Models\ListHarga;
-use App\Models\Pembayaran;
-use App\Models\Penjemputan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
-class OrderController extends Controller
+class TrackingController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Tampilkan halaman tracking (form input No Order)
+     */
+    public function index()
     {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        if (!$pelanggan) {
-            return redirect()->route('home')
-                ->with('error', 'Data pelanggan tidak ditemukan!');
-        }
-        
-        $perPage = $request->get('paginate', 10);
-        
-        $query = Cucian::with(['layanan', 'pembayaran', 'detail.listHarga'])
-            ->where('pelanggan_id', $pelanggan->pelanggan_id);
-        
-        // Filter berdasarkan status
-        if ($request->filled('status')) {
-            $query->where('status_cucian', $request->status);
-        }
-        
-        $orders = $query->orderBy('tgl_order', 'desc')->paginate($perPage);
-        
-        return view('pelanggan.order.index', compact('orders'));
+        return view('tracking.index');
     }
     
-    public function show($id)
+    /**
+     * Proses tracking berdasarkan No Order
+     */
+    public function track(Request $request)
     {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
+        $request->validate([
+            'no_order' => 'required|string'
+        ], [
+            'no_order.required' => 'Nomor order wajib diisi!'
+        ]);
         
-        $order = Cucian::with([
+        // Normalisasi input (hapus spasi, uppercase)
+        $noOrder = strtoupper(trim($request->no_order));
+        
+        // Extract angka dari input (misalnya: WW001 atau 001 atau WW00001)
+        preg_match('/(\d+)/', $noOrder, $matches);
+        
+        if (empty($matches)) {
+            return redirect()->route('tracking.index')
+                ->with('error', 'Format nomor order tidak valid! Contoh: WW001 atau 1');
+        }
+        
+        $orderId = (int) $matches[1];
+        
+        // Cari cucian dengan eager loading
+        $cucian = Cucian::with([
+            'pelanggan',
             'layanan',
             'detail.listHarga',
             'pembayaran',
-            'pelanggan'
-        ])
-        ->where('cucian_id', $id)
-        ->where('pelanggan_id', $pelanggan->pelanggan_id)
-        ->firstOrFail();
+            'penjemputan.staff',
+            'pengantaran.kurir'
+        ])->find($orderId);
         
-        return view('pelanggan.order.detail', compact('order'));
-    }
-    
-    public function create()
-    {
-        // Ambil layanan yang tersedia
-        $layanan = Layanan::orderBy('nama_layanan')->get();
-        
-        // Ambil list harga (untuk pilihan item jika diperlukan)
-        $listHarga = ListHarga::orderBy('nama_item')->get();
-        
-        // Ambil data pelanggan untuk alamat default
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        return view('pelanggan.order.create', compact('layanan', 'listHarga', 'pelanggan'));
-    }
-    
-    public function store(Request $request)
-    {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        if (!$pelanggan) {
-            return redirect()->back()
-                ->with('error', 'Data pelanggan tidak ditemukan!');
+        // Jika tidak ditemukan
+        if (!$cucian) {
+            return redirect()->route('tracking.index')
+                ->with('error', 'Nomor order tidak ditemukan! Pastikan nomor order sudah benar.');
         }
         
-        $request->validate([
-            'layanan_id' => 'required|exists:layanan,layanan_id',
-            'jenis_ambil' => 'required|in:diantar,ambil_sendiri',
-            'alamat_jemput' => 'required|string',
-            'items' => 'required|array|min:1',
-            'items.*.list_harga_id' => 'required|exists:list_harga,list_harga_id',
-            'items.*.jumlah' => 'nullable|integer|min:1',
-            'items.*.berat_kg' => 'nullable|numeric|min:0',
-            'metode_bayar' => 'required|in:cash,transfer',
-            'catatan' => 'nullable|string'
+        // ✅ KIRIM MODEL CUCIAN LANGSUNG (bukan stdClass)
+        return view('tracking.result', ['cucian' => $cucian]);
+    }
+    
+    /**
+     * API endpoint untuk real-time tracking (AJAX)
+     */
+    public function api($id)
+    {
+        $cucian = Cucian::with([
+            'pelanggan',
+            'layanan',
+            'pembayaran',
+            'penjemputan.staff',
+            'pengantaran.kurir'
+        ])->find($id);
+        
+        if (!$cucian) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order tidak ditemukan'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'no_order' => $cucian->getNoOrder(),
+                'status' => $cucian->status_cucian,
+                'status_label' => $cucian->getStatusLabel(),
+                'jenis_order' => $cucian->jenis_order,
+                'jenis_ambil' => $cucian->jenis_ambil,
+                'jenis_cucian' => $cucian->jenis_cucian,
+                'layanan' => $cucian->layanan->nama_layanan ?? '-',
+                'total_harga' => $cucian->total_harga,
+                'total_berat' => $cucian->total_berat,
+                'tgl_order' => $cucian->tgl_order->format('d M Y H:i'),
+                'estimasi' => $cucian->estimasi ? $cucian->estimasi->format('d M Y') : '-',
+                'tgl_selesai' => $cucian->tgl_selesai ? $cucian->tgl_selesai->format('d M Y H:i') : null,
+                'tgl_diambil' => $cucian->tgl_diambil ? $cucian->tgl_diambil->format('d M Y H:i') : null,
+                
+                // Pelanggan
+                'pelanggan' => [
+                    'nama' => $cucian->pelanggan->nama ?? 'N/A',
+                    'no_telp' => $cucian->pelanggan->no_telp ?? '-',
+                    'alamat' => $cucian->pelanggan->alamat ?? '-'
+                ],
+                
+                // Status Pembayaran
+                'pembayaran' => [
+                    'status' => $cucian->pembayaran->status_bayar ?? 'belum',
+                    'metode' => $cucian->pembayaran->metode_bayar ?? '-',
+                    'jumlah' => $cucian->pembayaran->jumlah_bayar ?? 0
+                ],
+                
+                // Info Penjemputan
+                'penjemputan' => $cucian->penjemputan ? [
+                    'status' => $cucian->penjemputan->status,
+                    'staff' => $cucian->penjemputan->staff->nama ?? '-',
+                    'alamat' => $cucian->penjemputan->alamat_jemput,
+                    'tgl_order' => $cucian->penjemputan->tgl_order ?? null
+                ] : null,
+                
+                // Info Pengantaran
+                'pengantaran' => $cucian->pengantaran ? [
+                    'status' => $cucian->pengantaran->status,
+                    'kurir' => $cucian->pengantaran->kurir->nama ?? '-',
+                    'alamat' => $cucian->pengantaran->alamat_antar,
+                    'tgl_berangkat' => $cucian->pengantaran->tgl_berangkat ?? null
+                ] : null,
+                
+                // Timeline
+                'timeline' => [
+                    'diterima' => [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->tgl_order->format('d M Y'),
+                        'waktu' => $cucian->tgl_order->format('H:i')
+                    ],
+                    'dijemput' => $cucian->penjemputan && $cucian->penjemputan->status === 'selesai' ? [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->penjemputan->updated_at->format('d M Y'),
+                        'waktu' => $cucian->penjemputan->updated_at->format('H:i')
+                    ] : [
+                        'status' => $cucian->penjemputan ? 'active' : 'pending',
+                        'tanggal' => '-',
+                        'waktu' => '-'
+                    ],
+                    'diproses' => in_array($cucian->status_cucian, ['diproses', 'selesai', 'diambil']) ? [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->updated_at->format('d M Y'),
+                        'waktu' => $cucian->updated_at->format('H:i')
+                    ] : [
+                        'status' => 'pending',
+                        'tanggal' => '-',
+                        'waktu' => '-'
+                    ],
+                    'selesai' => in_array($cucian->status_cucian, ['selesai', 'diambil']) ? [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->tgl_selesai ? $cucian->tgl_selesai->format('d M Y') : '-',
+                        'waktu' => $cucian->tgl_selesai ? $cucian->tgl_selesai->format('H:i') : '-'
+                    ] : [
+                        'status' => 'pending',
+                        'tanggal' => '-',
+                        'waktu' => '-'
+                    ],
+                    'diantar' => $cucian->pengantaran && $cucian->pengantaran->status === 'diproses' ? [
+                        'status' => 'active',
+                        'tanggal' => $cucian->pengantaran->tgl_berangkat ? $cucian->pengantaran->tgl_berangkat->format('d M Y') : '-',
+                        'waktu' => $cucian->pengantaran->tgl_berangkat ? $cucian->pengantaran->tgl_berangkat->format('H:i') : '-'
+                    ] : ($cucian->pengantaran && $cucian->pengantaran->status === 'selesai' ? [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->pengantaran->updated_at->format('d M Y'),
+                        'waktu' => $cucian->pengantaran->updated_at->format('H:i')
+                    ] : [
+                        'status' => 'pending',
+                        'tanggal' => '-',
+                        'waktu' => '-'
+                    ]),
+                    'diambil' => $cucian->status_cucian === 'diambil' ? [
+                        'status' => 'completed',
+                        'tanggal' => $cucian->tgl_diambil ? $cucian->tgl_diambil->format('d M Y') : '-',
+                        'waktu' => $cucian->tgl_diambil ? $cucian->tgl_diambil->format('H:i') : '-'
+                    ] : [
+                        'status' => 'pending',
+                        'tanggal' => '-',
+                        'waktu' => '-'
+                    ]
+                ]
+            ]
         ]);
-        
-        DB::beginTransaction();
-        try {
-            // Hitung total harga dan item
-            $totalHarga = 0;
-            $totalItem = count($request->items);
-            $totalBerat = 0;
-            
-            foreach ($request->items as $item) {
-                $listHarga = ListHarga::find($item['list_harga_id']);
-                
-                if (isset($item['berat_kg']) && $item['berat_kg'] > 0) {
-                    $totalBerat += $item['berat_kg'];
-                    $totalHarga += $item['berat_kg'] * $listHarga->harga_kiloan;
-                } else {
-                    $jumlah = $item['jumlah'] ?? 1;
-                    $totalHarga += $jumlah * $listHarga->harga_satuan;
-                }
-            }
-            
-            // Ambil layanan untuk hitung estimasi
-            $layanan = Layanan::find($request->layanan_id);
-            $estimasi = now()->addDays($layanan->durasi_hari);
-            
-            // Buat cucian (order online)
-            $cucian = Cucian::create([
-                'pelanggan_id' => $pelanggan->pelanggan_id,
-                'layanan_id' => $request->layanan_id,
-                'jenis_order' => 'online',
-                'jenis_ambil' => $request->jenis_ambil,
-                'tgl_order' => now(),
-                'estimasi' => $estimasi,
-                'total_item' => $totalItem,
-                'total_berat' => $totalBerat > 0 ? $totalBerat : null,
-                'total_harga' => $totalHarga,
-                'status_cucian' => 'menunggu',
-                'catatan' => $request->catatan
-            ]);
-            
-            // Buat detail cucian
-            foreach ($request->items as $item) {
-                CucianDetail::create([
-                    'cucian_id' => $cucian->cucian_id,
-                    'list_harga_id' => $item['list_harga_id'],
-                    'jumlah' => $item['jumlah'] ?? 1,
-                    'berat_kg' => $item['berat_kg'] ?? null,
-                    'deskripsi' => $item['deskripsi'] ?? null
-                ]);
-            }
-            
-            // Buat pembayaran
-            Pembayaran::create([
-                'cucian_id' => $cucian->cucian_id,
-                'metode_bayar' => $request->metode_bayar,
-                'status_bayar' => 'belum',
-                'jumlah_bayar' => $totalHarga
-            ]);
-            
-            // Buat penjemputan (karena order online perlu dijemput)
-            Penjemputan::create([
-                'cucian_id' => $cucian->cucian_id,
-                'alamat_jemput' => $request->alamat_jemput,
-                'status' => 'menunggu',
-                'tgl_order' => now(),
-                'catatan' => 'Order online - Menunggu penjemputan'
-            ]);
-            
-            DB::commit();
-            
-            return redirect()->route('pelanggan.order.index')
-                ->with('success', 'Order berhasil dibuat! Silakan tunggu konfirmasi penjemputan.');
-                
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()
-                ->with('error', 'Gagal membuat order: ' . $e->getMessage())
-                ->withInput();
-        }
-    }
-    
-    // Upload bukti pembayaran
-    public function uploadBukti(Request $request, $id)
-    {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        $cucian = Cucian::where('cucian_id', $id)
-            ->where('pelanggan_id', $pelanggan->pelanggan_id)
-            ->firstOrFail();
-        
-        $request->validate([
-            'bukti_bayar' => 'required|image|mimes:jpeg,png,jpg|max:2048'
-        ]);
-        
-        DB::beginTransaction();
-        try {
-            $pembayaran = $cucian->pembayaran;
-            
-            if (!$pembayaran) {
-                return redirect()->back()
-                    ->with('error', 'Data pembayaran tidak ditemukan!');
-            }
-            
-            // Hapus bukti lama jika ada
-            if ($pembayaran->bukti_bayar) {
-                Storage::disk('public')->delete($pembayaran->bukti_bayar);
-            }
-            
-            // Upload bukti baru
-            $path = $request->file('bukti_bayar')->store('bukti_bayar', 'public');
-            
-            $pembayaran->bukti_bayar = $path;
-            $pembayaran->tgl_bayar = now();
-            $pembayaran->save();
-            
-            DB::commit();
-            
-            return redirect()->back()
-                ->with('success', 'Bukti pembayaran berhasil diupload! Menunggu verifikasi.');
-                
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()
-                ->with('error', 'Gagal upload bukti: ' . $e->getMessage());
-        }
-    }
-    
-    // Cancel order (hanya jika status masih menunggu)
-    public function cancel($id)
-    {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        $cucian = Cucian::where('cucian_id', $id)
-            ->where('pelanggan_id', $pelanggan->pelanggan_id)
-            ->firstOrFail();
-        
-        if ($cucian->status_cucian !== 'menunggu') {
-            return redirect()->back()
-                ->with('error', 'Order hanya bisa dibatalkan jika status masih menunggu!');
-        }
-        
-        DB::beginTransaction();
-        try {
-            $cucian->delete();
-            
-            DB::commit();
-            
-            return redirect()->route('pelanggan.order.index')
-                ->with('success', 'Order berhasil dibatalkan!');
-                
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()
-                ->with('error', 'Gagal membatalkan order: ' . $e->getMessage());
-        }
     }
 }

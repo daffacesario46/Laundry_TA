@@ -1,69 +1,83 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// Import Controllers Admin
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\ListHargaController;
 use App\Http\Controllers\Admin\LayananController;
 use App\Http\Controllers\Admin\StokBahanController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\KurirController;
 
-// Import Staff Controllers
+//Import Controllers Staff
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\CucianController;
 use App\Http\Controllers\Staff\PelangganStaffController;
 use App\Http\Controllers\Staff\StatusCucianController;
+use App\Http\Controllers\Staff\PembayaranController;
+use App\Http\Controllers\Staff\PenjemputanController;
+use App\Http\Controllers\Staff\PengantaranController;
+use App\Http\Controllers\Staff\StaffProfileController;
 
-// Import Pelanggan Controllers
+
+// Import Controllers Pelanggan
 use App\Http\Controllers\Pelanggan\PelangganDashboardController;
 use App\Http\Controllers\Pelanggan\OrderController;
 use App\Http\Controllers\Pelanggan\ProfileController;
 
-// ==========================================
-// HOME & AUTH (TEMPORARY - NO REAL AUTH)
-// ==========================================
+
+// Import Controllers Kurir
+use App\Http\Controllers\Kurir\KurirDashboardController;
+use App\Http\Controllers\Kurir\KurirPenjemputanController;
+use App\Http\Controllers\Kurir\KurirPengantaranController;
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes (No Authentication)
+|--------------------------------------------------------------------------
+*/
 
 // Home
 Route::get('/', function() {
     return view('welcome');
 })->name('home');
 
-// Login (Dummy - untuk development)
-Route::get('/login', function() {
-    return view('auth.login'); // Nanti kita buat view sederhana
-})->name('login');
-Route::get('/register', function() {
-    return view('auth.register'); // Nanti kita buat view sederhana
-})->name('register');
+// Authentication Routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::post('/login', function() {
-    // Dummy login - redirect ke admin dashboard
-    return redirect()->route('admin.dashboard');
-})->name('login.post');
 
-// Logout (Dummy)
-Route::post('/logout', function() {
-    return redirect('/')->with('success', 'Logout berhasil!');
-})->name('logout');
+// Tracking Routes  
+Route::get('/tracking', [App\Http\Controllers\TrackingController::class, 'index'])->name('tracking.index');
+Route::post('/tracking', [App\Http\Controllers\TrackingController::class, 'track'])->name('tracking.track');
+Route::get('/tracking/api/{id}', [App\Http\Controllers\TrackingController::class, 'api'])->name('tracking.api');
 
-// Tracking Routes (Dummy)
-Route::get('/tracking', function() {
-    return view('tracking.index');
-})->name('tracking.index');
 
-Route::post('/tracking', function() {
-    return redirect()->route('tracking.index')->with('error', 'Nomor order tidak ditemukan!');
-})->name('tracking.track');
 
-// ==========================================
-// ADMIN VIEWS
-// ==========================================
-Route::prefix('admin')->name('admin.')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES (Protected)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     
-    // Dashboard 
-    Route::get('/', [DashboardController::class, 'index'])->name('index');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard/detail/{no_order}', [DashboardController::class, 'detail'])->name('detail');
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('index');
+    Route::get('/dashboard/detail/{cucian_id}', [DashboardController::class, 'detail'])->name('dashboard.detail');
+
+    // LAPORAN KEUANGAN
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanController::class, 'index'])->name('index');
+        Route::get('/export-pdf', [LaporanController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/export-excel', [LaporanController::class, 'exportExcel'])->name('export-excel');
+    });
 
     // STAFF MANAGEMENT
     Route::prefix('staff')->name('staff.')->group(function () {
@@ -77,7 +91,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // KURIR MANAGEMENT
     Route::prefix('kurir')->name('kurir.')->group(function () {
         Route::get('/', [KurirController::class, 'index'])->name('index');
+        Route::get('/create', [KurirController::class, 'create'])->name('create');
         Route::post('/', [KurirController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [KurirController::class, 'edit'])->name('edit');
         Route::put('/{id}', [KurirController::class, 'update'])->name('update');
         Route::delete('/{id}', [KurirController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [KurirController::class, 'toggleStatus'])->name('toggle-status');
@@ -124,18 +140,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('settings');
 });
 
-// ==========================================
-// STAFF VIEWS
-// ==========================================
-Route::prefix('staff')->name('staff.')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| STAFF ROUTES (Protected)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
     
-    // Profile
-    Route::get('/profile', function() {
-        return view('staff.profile');
-    })->name('profile');
+    // PROFILE STAFF
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Staff\ProfileController::class, 'index'])->name('index');
+        Route::get('/edit', [App\Http\Controllers\Staff\ProfileController::class, 'edit'])->name('edit');
+        Route::put('/update', [App\Http\Controllers\Staff\ProfileController::class, 'update'])->name('update');
+        Route::get('/change-password', [App\Http\Controllers\Staff\ProfileController::class, 'changePassword'])->name('change-password');
+        Route::put('/update-password', [App\Http\Controllers\Staff\ProfileController::class, 'updatePassword'])->name('update-password');
+        Route::delete('/delete-photo', [App\Http\Controllers\Staff\ProfileController::class, 'deletePhoto'])->name('delete-photo');
+    });
     
     // CRUD Cucian
     Route::prefix('cucian')->name('cucian.')->group(function () {
@@ -146,6 +169,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/{id}/edit', [CucianController::class, 'edit'])->name('edit');
         Route::put('/{id}', [CucianController::class, 'update'])->name('update');
         Route::delete('/{id}', [CucianController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/input-berat', [CucianController::class, 'showInputBerat'])->name('input-berat');
+        Route::put('/{id}/update-berat', [CucianController::class, 'updateBerat'])->name('update-berat');
     });
     
     // CRUD Pelanggan
@@ -156,6 +181,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/{id}/edit', [PelangganStaffController::class, 'edit'])->name('edit');
         Route::put('/{id}', [PelangganStaffController::class, 'update'])->name('update');
         Route::delete('/{id}', [PelangganStaffController::class, 'destroy'])->name('destroy');
+        Route::delete('/{id}/delete-foto', [PelangganStaffController::class, 'deleteFoto'])->name('delete-foto');
     });
     
     // Status Cucian
@@ -164,19 +190,118 @@ Route::prefix('staff')->name('staff.')->group(function () {
         Route::post('/{id}/konfirmasi', [StatusCucianController::class, 'konfirmasi'])->name('konfirmasi');
         Route::post('/{id}/update-status', [StatusCucianController::class, 'updateStatus'])->name('update-status');
     });
+
+    // PEMBAYARAN MANAGEMENT
+    Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+        Route::get('/', [PembayaranController::class, 'index'])->name('index');
+        Route::get('/{id}', [PembayaranController::class, 'show'])->name('show');
+        
+        // Process payment for offline customer
+        Route::get('/cucian/{cucian_id}/bayar', [PembayaranController::class, 'showPaymentForm'])->name('form');
+        Route::post('/cucian/{cucian_id}/proses', [PembayaranController::class, 'processPayment'])->name('process');
+        
+        // Validate transfer payment for online customer
+        Route::get('/{id}/validate', [PembayaranController::class, 'showValidateForm'])->name('validate-form');
+        Route::put('/{id}/validate', [PembayaranController::class, 'validatePayment'])->name('validate');
+        
+        // Delete/Cancel payment
+        Route::delete('/{id}', [PembayaranController::class, 'destroy'])->name('destroy');
+    });
+
+    // PENJEMPUTAN MANAGEMENT
+    Route::prefix('penjemputan')->name('penjemputan.')->group(function () {
+        Route::get('/', [PenjemputanController::class, 'index'])->name('index');
+        Route::get('/{id}', [PenjemputanController::class, 'show'])->name('show');
+        
+        // Assign kurir (create new)
+        Route::get('/cucian/{cucian_id}/assign', [PenjemputanController::class, 'assignForm'])->name('assign-form');
+        Route::post('/cucian/{cucian_id}/assign', [PenjemputanController::class, 'assign'])->name('assign');
+        
+        // Edit penjemputan (update existing) - TAMBAHAN BARU
+        Route::get('/{id}/edit', [PenjemputanController::class, 'edit'])->name('edit');
+        
+        // Update status
+        Route::put('/{id}/status', [PenjemputanController::class, 'updateStatus'])->name('update-status');
+        
+        // Upload foto
+        Route::post('/{id}/upload-foto', [PenjemputanController::class, 'uploadFoto'])->name('upload-foto');
+        
+        // Delete
+        Route::delete('/{id}', [PenjemputanController::class, 'destroy'])->name('destroy');
+    });
+    
+    // PENGANTARAN MANAGEMENT
+    Route::prefix('pengantaran')->name('pengantaran.')->group(function () {
+        Route::get('/', [PengantaranController::class, 'index'])->name('index');
+        Route::get('/{id}', [PengantaranController::class, 'show'])->name('show');
+        
+        // Assign kurir (create new)
+        Route::get('/cucian/{cucian_id}/assign', [PengantaranController::class, 'assignForm'])->name('assign-form');
+        Route::post('/cucian/{cucian_id}/assign', [PengantaranController::class, 'assign'])->name('assign');
+        
+        // Edit pengantaran (update existing) - TAMBAHAN BARU
+        Route::get('/{id}/edit', [PengantaranController::class, 'edit'])->name('edit');
+        
+        // Update status
+        Route::put('/{id}/status', [PengantaranController::class, 'updateStatus'])->name('update-status');
+        
+        // Upload foto
+        Route::post('/{id}/upload-foto', [PengantaranController::class, 'uploadFoto'])->name('upload-foto');
+        
+        // Delete
+        Route::delete('/{id}', [PengantaranController::class, 'destroy'])->name('destroy');
+    });
+
+    // PROFILE STAFF
+Route::prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [StaffProfileController::class, 'index'])->name('index');
+    Route::get('/edit', [StaffProfileController::class, 'edit'])->name('edit');
+    Route::put('/update', [StaffProfileController::class, 'update'])->name('update');
+    Route::get('/change-password', [StaffProfileController::class, 'changePassword'])->name('change-password');
+    Route::put('/update-password', [StaffProfileController::class, 'updatePassword'])->name('update-password');
+    Route::delete('/delete-photo', [StaffProfileController::class, 'deletePhoto'])->name('delete-photo');
+});
+}); // TUTUP STAFF ROUTES
+
+
+/*
+|--------------------------------------------------------------------------
+| KURIR ROUTES (Protected)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('kurir')->name('kurir.')->middleware(['auth', 'role:kurir'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [KurirDashboardController::class, 'index'])->name('dashboard');
+    
+    // PENJEMPUTAN TASKS
+    Route::prefix('penjemputan')->name('penjemputan.')->group(function () {
+        Route::get('/', [KurirPenjemputanController::class, 'index'])->name('index');
+        Route::get('/{id}', [KurirPenjemputanController::class, 'show'])->name('show');
+        Route::post('/{id}/start', [KurirPenjemputanController::class, 'start'])->name('start');
+        Route::post('/{id}/complete', [KurirPenjemputanController::class, 'complete'])->name('complete');
+    });
+    
+    // PENGANTARAN TASKS
+    Route::prefix('pengantaran')->name('pengantaran.')->group(function () {
+        Route::get('/', [KurirPengantaranController::class, 'index'])->name('index');
+        Route::get('/{id}', [KurirPengantaranController::class, 'show'])->name('show');
+        Route::post('/{id}/start', [KurirPengantaranController::class, 'start'])->name('start');
+        Route::post('/{id}/complete', [KurirPengantaranController::class, 'complete'])->name('complete');
+    });
+    
+    // Profile
+    Route::get('/profile', function() {
+        return view('kurir.profile');
+    })->name('profile');
 });
 
-// ==========================================
-// KURIR VIEWS
-// ==========================================
-Route::prefix('kurir')->name('kurir.')->group(function () {
-    Route::get('/dashboard', function() {
-        return view('kurir.dashboard');
-    })->name('dashboard');
-});
-
-// PELANGGAN VIEWS
-Route::prefix('pelanggan')->name('pelanggan.')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| PELANGGAN ROUTES (Protected)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pelanggan')->name('pelanggan.')->middleware(['auth', 'role:pelanggan'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [PelangganDashboardController::class, 'index'])->name('dashboard');
@@ -187,9 +312,17 @@ Route::prefix('pelanggan')->name('pelanggan.')->group(function () {
         Route::get('/create', [OrderController::class, 'create'])->name('create');
         Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
+        Route::get('/{id}/detail', [OrderController::class, 'detail'])->name('detail');
+        
+        // PAYMENT ROUTES
+        Route::get('/{id}/upload-bukti', [OrderController::class, 'showUploadBukti'])->name('show-upload-bukti');
+        Route::post('/{id}/upload-bukti', [OrderController::class, 'uploadBukti'])->name('upload-bukti');
+        Route::get('/{id}/payment-status', [OrderController::class, 'paymentStatus'])->name('payment-status');
+        
+        Route::delete('/{id}/cancel', [OrderController::class, 'cancel'])->name('cancel');
     });
     
-    // Profile Management - TAMBAHKAN INI
+    // Profile Management
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'index'])->name('index');
         Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
@@ -202,4 +335,6 @@ Route::prefix('pelanggan')->name('pelanggan.')->group(function () {
     Route::get('/home', function() {
         return view('pelanggan.home');
     })->name('home');
-});
+}); // TUTUP PELANGGAN ROUTES
+    
+   

@@ -1,239 +1,372 @@
 @extends('layouts.home')
 
 @section('content')
-<div class="container-xxl py-6">
+<div class="container-xxl py-5">
     <div class="container">
-        <!-- Search Bar -->
-        <div class="row justify-content-center mb-4">
+        <!-- Quick Search -->
+        <div class="row justify-content-center mb-4 wow fadeInUp" data-wow-delay="0.1s">
             <div class="col-lg-8">
                 <form action="{{ route('tracking.track') }}" method="POST">
                     @csrf
-                    <div class="position-relative">
-                        <input class="form-control form-control-lg rounded-pill ps-4 pe-5" 
+                    <div class="input-group input-group-lg shadow-sm" style="border-radius: 50px; overflow: hidden;">
+                        <span class="input-group-text bg-white border-0 ps-4">
+                            <i class="fa fa-barcode text-primary"></i>
+                        </span>
+                        <input class="form-control border-0 ps-2" 
                                name="no_order" 
                                type="text" 
-                               placeholder="Masukkan Kode Transaksi untuk Cek Status" 
-                               value="{{ $cucian->no_order }}">
-                        <button class="btn btn-primary rounded-pill py-2 px-4 position-absolute top-0 end-0 m-1">
-                            <i class="fa fa-search me-1"></i> Cek
+                               placeholder="Cari order lain..."
+                               value="{{ $cucian->getNoOrder() }}">
+                        <button class="btn btn-primary px-5 border-0" type="submit" style="border-radius: 0 50px 50px 0;">
+                            <i class="fa fa-search me-2"></i>Lacak
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Status Card -->
+        <!-- Main Card -->
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="card border-0 shadow-lg mb-4 wow fadeInUp" data-wow-delay="0.1s">
-                    <!-- Status Header -->
-                    @if($cucian->status == 'menunggu')
-                        <div class="card-header bg-warning" style="height: 150px"></div>
-                    @elseif($cucian->status == 'proses')
-                        <div class="card-header bg-info" style="height: 150px"></div>
-                    @elseif($cucian->status == 'selesai')
-                        <div class="card-header bg-success" style="height: 150px"></div>
-                    @else
-                        <div class="card-header bg-primary" style="height: 150px"></div>
-                    @endif
+                <div class="card border-0 shadow-lg mb-4 wow fadeInUp" data-wow-delay="0.2s" style="border-radius: 20px; overflow: hidden;">
+                    <!-- Status Header dengan Gradient -->
+                    @php
+                        $headerClass = match($cucian->status_cucian) {
+                            'menunggu' => 'bg-gradient-warning',
+                            'diproses' => 'bg-gradient-info',
+                            'selesai' => 'bg-gradient-success',
+                            'diambil' => 'bg-gradient-secondary',
+                            default => 'bg-gradient-primary'
+                        };
+                    @endphp
+                    <div class="{{ $headerClass }}" style="height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
 
                     <div class="card-body p-4">
-                        <div class="row">
-                            <!-- Logo -->
-                            <div class="col-xl col-lg flex-grow-0" style="flex-basis: 230px">
-                                <div class="img-thumbnail shadow w-100 bg-white position-relative text-center" style="height: 190px; width: 200px; margin-top: -120px">
-                                    <img src="{{ asset('admins/imgs/theme/washwes.png') }}" style="max-height: 190px; max-width: 200px;" class="center-xy img-fluid" alt="Logo Brand" />
+                        <!-- Logo & Order Info -->
+                        <div class="row align-items-end mb-4" style="margin-top: -80px;">
+                            <div class="col-auto">
+                                <div class="bg-white shadow-lg p-3 rounded-4" style="width: 130px; height: 130px;">
+                                    <img src="{{ asset('admins/imgs/theme/washwes.png') }}" 
+                                         class="img-fluid" 
+                                         alt="Washwes Logo">
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h2 class="mb-1 text-white fw-bold">{{ $cucian->getNoOrder() }}</h2>
+                                <p class="mb-0 text-white-50">
+                                    <i class="fa fa-user me-2"></i>{{ $cucian->pelanggan->nama ?? 'N/A' }}
+                                </p>
+                            </div>
+                            <div class="col-auto text-end">
+                                @php
+                                    $badgeClass = match($cucian->status_cucian) {
+                                        'menunggu' => 'bg-warning',
+                                        'diproses' => 'bg-info',
+                                        'selesai' => 'bg-success',
+                                        'diambil' => 'bg-secondary',
+                                        default => 'bg-primary'
+                                    };
+                                    $iconClass = match($cucian->status_cucian) {
+                                        'menunggu' => 'fa-clock',
+                                        'diproses' => 'fa-sync fa-spin',
+                                        'selesai' => 'fa-check-circle',
+                                        'diambil' => 'fa-check-double',
+                                        default => 'fa-info-circle'
+                                    };
+                                @endphp
+                                <span class="badge {{ $badgeClass }} px-4 py-3 fs-5 shadow">
+                                    <i class="fa {{ $iconClass }} me-2"></i>{{ $cucian->getStatusLabel() }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Info Cards Grid -->
+                        <div class="row g-3 mb-4">
+                            <!-- Layanan -->
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-tags text-primary fs-3 mb-2"></i>
+                                        <p class="text-muted small mb-1">Jenis Layanan</p>
+                                        <h6 class="mb-0 fw-bold">{{ $cucian->layanan->nama_layanan ?? '-' }}</h6>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Berat/Item -->
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-weight text-info fs-3 mb-2"></i>
+                                        <p class="text-muted small mb-1">
+                                            {{ $cucian->layanan && $cucian->layanan->jenis_cucian === 'kiloan' ? 'Berat' : 'Total Item' }}
+                                        </p>
+                                        <h6 class="mb-0 fw-bold">
+                                            @if($cucian->layanan && $cucian->layanan->jenis_cucian === 'kiloan')
+                                                {{ $cucian->total_berat ? number_format($cucian->total_berat, 1) . ' Kg' : 'Belum ditimbang' }}
+                                            @else
+                                                {{ $cucian->total_item }} Item
+                                            @endif
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Harga -->
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-money-bill-wave text-success fs-3 mb-2"></i>
+                                        <p class="text-muted small mb-1">Total Harga</p>
+                                        <h6 class="mb-0 fw-bold text-success">
+                                            {{ $cucian->getFormattedTotalHarga() }}
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Bayar -->
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fa fa-credit-card text-warning fs-3 mb-2"></i>
+                                        <p class="text-muted small mb-1">Pembayaran</p>
+                                        @if($cucian->pembayaran)
+                                            <span class="badge {{ $cucian->pembayaran->status_bayar === 'lunas' ? 'bg-success' : 'bg-warning' }} px-3 py-2">
+                                                {{ $cucian->pembayaran->status_bayar === 'lunas' ? 'Lunas' : 'Belum Lunas' }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary px-3 py-2">-</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline -->
+                        <div class="card border-0 bg-light mb-4">
+                            <div class="card-body p-4">
+                                <h5 class="fw-bold mb-4">
+                                    <i class="fa fa-route text-primary me-2"></i>Timeline Pesanan
+                                </h5>
+
+                                <div class="timeline-wrapper">
+                                    @php
+                                        $isOnline = $cucian->jenis_order === 'online';
+                                        $needsDelivery = $cucian->jenis_ambil === 'diantar';
+                                        
+                                        $steps = [
+                                            [
+                                                'title' => 'Order Diterima',
+                                                'icon' => 'fa-check-circle',
+                                                'status' => 'completed',
+                                                'date' => $cucian->tgl_order->format('d M Y'),
+                                                'time' => $cucian->tgl_order->format('H:i'),
+                                                'color' => 'success'
+                                            ]
+                                        ];
+                                        
+                                        // Jika online, tambah step penjemputan
+                                        if ($isOnline) {
+                                            $penjemputanStatus = 'pending';
+                                            $penjemputanDate = '-';
+                                            $penjemputanTime = '-';
+                                            
+                                            if ($cucian->penjemputan) {
+                                                if ($cucian->penjemputan->status === 'selesai') {
+                                                    $penjemputanStatus = 'completed';
+                                                    $penjemputanDate = $cucian->penjemputan->updated_at->format('d M Y');
+                                                    $penjemputanTime = $cucian->penjemputan->updated_at->format('H:i');
+                                                } elseif ($cucian->penjemputan->status === 'diproses') {
+                                                    $penjemputanStatus = 'active';
+                                                }
+                                            }
+                                            
+                                            $steps[] = [
+                                                'title' => 'Dijemput Kurir',
+                                                'icon' => 'fa-truck',
+                                                'status' => $penjemputanStatus,
+                                                'date' => $penjemputanDate,
+                                                'time' => $penjemputanTime,
+                                                'color' => 'info',
+                                                'subtitle' => $cucian->penjemputan && $cucian->penjemputan->staff ? 
+                                                    'Kurir: ' . $cucian->penjemputan->staff->nama : null
+                                            ];
+                                        }
+                                        
+                                        // Step diproses
+                                        $prosesStatus = in_array($cucian->status_cucian, ['diproses', 'selesai', 'diambil']) ? 'completed' : 
+                                            ($cucian->status_cucian === 'diproses' ? 'active' : 'pending');
+                                        $steps[] = [
+                                            'title' => 'Sedang Diproses',
+                                            'icon' => 'fa-sync',
+                                            'status' => $prosesStatus,
+                                            'date' => $prosesStatus !== 'pending' ? $cucian->updated_at->format('d M Y') : '-',
+                                            'time' => $prosesStatus !== 'pending' ? $cucian->updated_at->format('H:i') : '-',
+                                            'color' => 'warning'
+                                        ];
+                                        
+                                        // Step selesai
+                                        $selesaiStatus = in_array($cucian->status_cucian, ['selesai', 'diambil']) ? 'completed' : 
+                                            ($cucian->status_cucian === 'selesai' ? 'active' : 'pending');
+                                        $steps[] = [
+                                            'title' => 'Cucian Selesai',
+                                            'icon' => 'fa-check-double',
+                                            'status' => $selesaiStatus,
+                                            'date' => $cucian->tgl_selesai ? $cucian->tgl_selesai->format('d M Y') : '-',
+                                            'time' => $cucian->tgl_selesai ? $cucian->tgl_selesai->format('H:i') : '-',
+                                            'color' => 'success'
+                                        ];
+                                        
+                                        // Jika perlu diantar
+                                        if ($needsDelivery) {
+                                            $antarStatus = 'pending';
+                                            $antarDate = '-';
+                                            $antarTime = '-';
+                                            $antarSubtitle = null;
+                                            
+                                            if ($cucian->pengantaran) {
+                                                if ($cucian->pengantaran->status === 'selesai') {
+                                                    $antarStatus = 'completed';
+                                                    $antarDate = $cucian->pengantaran->updated_at->format('d M Y');
+                                                    $antarTime = $cucian->pengantaran->updated_at->format('H:i');
+                                                } elseif ($cucian->pengantaran->status === 'diproses') {
+                                                    $antarStatus = 'active';
+                                                    $antarDate = $cucian->pengantaran->tgl_berangkat ? $cucian->pengantaran->tgl_berangkat->format('d M Y') : '-';
+                                                    $antarTime = $cucian->pengantaran->tgl_berangkat ? $cucian->pengantaran->tgl_berangkat->format('H:i') : '-';
+                                                }
+                                                
+                                                if ($cucian->pengantaran->kurir) {
+                                                    $antarSubtitle = 'Kurir: ' . $cucian->pengantaran->kurir->nama;
+                                                }
+                                            }
+                                            
+                                            $steps[] = [
+                                                'title' => 'Sedang Diantar',
+                                                'icon' => 'fa-shipping-fast',
+                                                'status' => $antarStatus,
+                                                'date' => $antarDate,
+                                                'time' => $antarTime,
+                                                'color' => 'primary',
+                                                'subtitle' => $antarSubtitle
+                                            ];
+                                        }
+                                        
+                                        // Step terakhir
+                                        $steps[] = [
+                                            'title' => $needsDelivery ? 'Diterima' : 'Diambil',
+                                            'icon' => 'fa-flag-checkered',
+                                            'status' => $cucian->status_cucian === 'diambil' ? 'completed' : 'pending',
+                                            'date' => $cucian->tgl_diambil ? $cucian->tgl_diambil->format('d M Y') : '-',
+                                            'time' => $cucian->tgl_diambil ? $cucian->tgl_diambil->format('H:i') : '-',
+                                            'color' => 'secondary'
+                                        ];
+                                    @endphp
+
+                                    <div class="timeline">
+                                        @foreach($steps as $index => $step)
+                                        <div class="timeline-item {{ $step['status'] }}">
+                                            <div class="timeline-marker bg-{{ $step['color'] }}">
+                                                <i class="fa {{ $step['icon'] }} text-white"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <h6 class="mb-1 fw-bold">{{ $step['title'] }}</h6>
+                                                @if(isset($step['subtitle']))
+                                                <small class="text-muted d-block mb-1">{{ $step['subtitle'] }}</small>
+                                                @endif
+                                                <small class="text-muted">
+                                                    @if($step['date'] !== '-')
+                                                        <i class="fa fa-calendar me-1"></i>{{ $step['date'] }}
+                                                        <i class="fa fa-clock ms-2 me-1"></i>{{ $step['time'] }}
+                                                    @else
+                                                        <i class="fa fa-hourglass-half me-1"></i>Menunggu
+                                                    @endif
+                                                </small>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detail Pesanan -->
+                        <div class="row g-4 mb-4">
+                            <!-- Customer Info -->
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold mb-3">
+                                            <i class="fa fa-user text-primary me-2"></i>Informasi Pelanggan
+                                        </h6>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Nama:</small>
+                                            <p class="mb-0 fw-bold">{{ $cucian->pelanggan->nama ?? 'N/A' }}</p>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">No. Telepon:</small>
+                                            <p class="mb-0 fw-bold">{{ $cucian->pelanggan->no_telp ?? '-' }}</p>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Alamat:</small>
+                                            <p class="mb-0">{{ $cucian->pelanggan->alamat ?? '-' }}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Order Info -->
-                            <div class="col-xl col-lg">
-                                <h3 class="mb-1">{{ $cucian->no_order }}</h3>
-                                <p class="text-muted mb-0">{{ $cucian->nama_pelanggan }}</p>
-                            </div>
-
-                            <!-- Status Badge -->
-                            <div class="col-xl-6 text-md-end">
-                                @if($cucian->status == 'menunggu')
-                                    <span class="badge bg-warning text-dark" style="width: 30%; font-size: 16px; padding: 10px;">
-                                        <i class="fa fa-clock me-1"></i> Menunggu Konfirmasi
-                                    </span>
-                                @elseif($cucian->status == 'proses')
-                                    <span class="badge bg-info" style="width: 30%; font-size: 16px; padding: 10px;">
-                                        <i class="fa fa-sync fa-spin me-1"></i> Sedang Diproses
-                                    </span>
-                                @elseif($cucian->status == 'selesai')
-                                    <span class="badge bg-success" style="width: 30%; font-size: 16px; padding: 10px;">
-                                        <i class="fa fa-check-circle me-1"></i> Selesai
-                                    </span>
-                                @else
-                                    <span class="badge bg-primary" style="width: 30%; font-size: 16px; padding: 10px;">
-                                        <i class="fa fa-check-double me-1"></i> Sudah Diambil
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <hr class="my-4" />
-
-                        <!-- Detail Information -->
-                        <div class="row g-4">
-                            <!-- Price Info -->
-                            <div class="col-md-12 col-lg-3 col-xl-2">
-                                <article class="box">
-                                    <p class="mb-1 text-muted small">Berat:</p>
-                                    <h5 class="text-primary mb-3">{{ $cucian->berat }} KG</h5>
-
-                                    <p class="mb-1 text-muted small">Jenis Layanan:</p>
-                                    <h6 class="mb-3">{{ $cucian->jenis_layanan }}</h6>
-
-                                    <p class="mb-1 text-muted small">Total Harga:</p>
-                                    <h5 class="text-success mb-0">Rp {{ number_format($cucian->total_harga, 0, ',', '.') }}</h5>
-                                </article>
-                            </div>
-
-                            <!-- Customer Detail -->
-                            <div class="col-sm-6 col-lg-5 col-xl-4">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="fa fa-user me-2 text-primary"></i>Detail Pelanggan
-                                </h6>
-                                <p>
-                                    <strong>Nama:</strong> {{ $cucian->nama_pelanggan }}<br />
-                                    <strong>Telepon:</strong> {{ $cucian->no_telp }}<br />
-                                    @if($cucian->staff_name)
-                                    <strong>Ditangani oleh:</strong> {{ $cucian->staff_name }}<br />
-                                    @endif
-                                </p>
-                            </div>
-
-                            <!-- Order Detail -->
-                            <div class="col-sm-6 col-lg-5 col-xl-3">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="fa fa-receipt me-2 text-primary"></i>Detail Pesanan
-                                </h6>
-                                <p>
-                                    <strong>Diterima:</strong><br>
-                                    {{ \Carbon\Carbon::parse($cucian->tanggal_masuk)->format('d M Y, H:i') }}<br />
-                                    
-                                    @if($cucian->tanggal_selesai)
-                                    <strong>Selesai:</strong><br>
-                                    {{ \Carbon\Carbon::parse($cucian->tanggal_selesai)->format('d M Y, H:i') }}<br />
-                                    @else
-                                    <strong>Estimasi Selesai:</strong><br>
-                                    {{ \Carbon\Carbon::parse($cucian->estimasi_selesai)->format('d M Y, H:i') }}<br />
-                                    @endif
-                                </p>
-                            </div>
-
-                            <!-- Address -->
-                            <div class="col-sm-6 col-lg-4 col-xl-3">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="fa fa-map-marker-alt me-2 text-primary"></i>Alamat Pengantaran
-                                </h6>
-                                <p>{{ $cucian->alamat }}</p>
-                                @if($cucian->catatan)
-                                <div class="alert alert-warning p-2 small">
-                                    <strong>Catatan:</strong> {{ $cucian->catatan }}
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <hr class="my-4" />
-
-                        <!-- Timeline -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h6 class="fw-bold mb-4">
-                                    <i class="fa fa-clock me-2 text-primary"></i>Timeline Pesanan
-                                </h6>
-
-                                <div class="timeline-horizontal">
-                                    <div class="row text-center">
-                                        <!-- Step 1: Diterima -->
-                                        <div class="col-3">
-                                            <div class="timeline-step completed">
-                                                <div class="timeline-icon bg-primary">
-                                                    <i class="fa fa-check text-white"></i>
-                                                </div>
-                                                <h6 class="mt-3 mb-1">Diterima</h6>
-                                                <small class="text-muted">
-                                                    {{ \Carbon\Carbon::parse($cucian->tanggal_masuk)->format('d M Y') }}<br>
-                                                    {{ \Carbon\Carbon::parse($cucian->tanggal_masuk)->format('H:i') }}
-                                                </small>
-                                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold mb-3">
+                                            <i class="fa fa-receipt text-primary me-2"></i>Detail Pesanan
+                                        </h6>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Tgl Order:</small>
+                                            <p class="mb-0 fw-bold">{{ $cucian->tgl_order->format('d M Y, H:i') }}</p>
                                         </div>
-
-                                        <!-- Step 2: Proses -->
-                                        <div class="col-3">
-                                            <div class="timeline-step {{ in_array($cucian->status, ['proses', 'selesai', 'diambil']) ? 'completed' : '' }} {{ $cucian->status == 'proses' ? 'active' : '' }}">
-                                                <div class="timeline-icon {{ in_array($cucian->status, ['proses', 'selesai', 'diambil']) ? 'bg-info' : 'bg-secondary' }}">
-                                                    <i class="fa {{ $cucian->status == 'proses' ? 'fa-sync fa-spin' : 'fa-check' }} text-white"></i>
-                                                </div>
-                                                <h6 class="mt-3 mb-1">Diproses</h6>
-                                                <small class="text-muted">
-                                                    @if($cucian->tanggal_proses)
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_proses)->format('d M Y') }}<br>
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_proses)->format('H:i') }}
-                                                    @else
-                                                        -
-                                                    @endif
-                                                </small>
-                                            </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">Estimasi Selesai:</small>
+                                            <p class="mb-0 fw-bold">
+                                                {{ $cucian->estimasi ? $cucian->estimasi->format('d M Y') : '-' }}
+                                            </p>
                                         </div>
-
-                                        <!-- Step 3: Selesai -->
-                                        <div class="col-3">
-                                            <div class="timeline-step {{ in_array($cucian->status, ['selesai', 'diambil']) ? 'completed' : '' }} {{ $cucian->status == 'selesai' ? 'active' : '' }}">
-                                                <div class="timeline-icon {{ in_array($cucian->status, ['selesai', 'diambil']) ? 'bg-success' : 'bg-secondary' }}">
-                                                    <i class="fa fa-check-circle text-white"></i>
-                                                </div>
-                                                <h6 class="mt-3 mb-1">Selesai</h6>
-                                                <small class="text-muted">
-                                                    @if($cucian->tanggal_selesai)
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_selesai)->format('d M Y') }}<br>
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_selesai)->format('H:i') }}
-                                                    @else
-                                                        -
-                                                    @endif
-                                                </small>
-                                            </div>
+                                        @if($cucian->tgl_selesai)
+                                        <div class="mb-2">
+                                            <small class="text-muted">Selesai:</small>
+                                            <p class="mb-0 fw-bold text-success">
+                                                {{ $cucian->tgl_selesai->format('d M Y, H:i') }}
+                                            </p>
                                         </div>
-
-                                        <!-- Step 4: Diambil -->
-                                        <div class="col-3">
-                                            <div class="timeline-step {{ $cucian->status == 'diambil' ? 'completed' : '' }}">
-                                                <div class="timeline-icon {{ $cucian->status == 'diambil' ? 'bg-primary' : 'bg-secondary' }}">
-                                                    <i class="fa fa-shopping-bag text-white"></i>
-                                                </div>
-                                                <h6 class="mt-3 mb-1">Diambil</h6>
-                                                <small class="text-muted">
-                                                    @if($cucian->tanggal_diambil)
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_diambil)->format('d M Y') }}<br>
-                                                        {{ \Carbon\Carbon::parse($cucian->tanggal_diambil)->format('H:i') }}
-                                                    @else
-                                                        -
-                                                    @endif
-                                                </small>
-                                            </div>
+                                        @endif
+                                        @if($cucian->catatan)
+                                        <div class="alert alert-warning p-2 mt-2 mb-0">
+                                            <small><strong>Catatan:</strong> {{ $cucian->catatan }}</small>
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <button onclick="window.print()" class="btn btn-outline-primary">
-                                        <i class="fa fa-print me-1"></i> Cetak
-                                    </button>
-                                    <a href="{{ route('tracking.index') }}" class="btn btn-primary">
-                                        <i class="fa fa-search me-1"></i> Lacak Lagi
-                                    </a>
-                                </div>
-                            </div>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <button onclick="window.print()" class="btn btn-outline-primary px-4">
+                                <i class="fa fa-print me-2"></i>Cetak
+                            </button>
+                            <a href="{{ route('tracking.index') }}" class="btn btn-primary px-4">
+                                <i class="fa fa-search me-2"></i>Lacak Order Lain
+                            </a>
+                            @auth
+                                @if(Auth::user()->role === 'pelanggan' && $cucian->pelanggan->users_id === Auth::id())
+                                <a href="{{ route('pelanggan.order.show', $cucian->cucian_id) }}" class="btn btn-success px-4">
+                                    <i class="fa fa-eye me-2"></i>Lihat Detail Lengkap
+                                </a>
+                                @endif
+                            @endauth
                         </div>
                     </div>
                 </div>
@@ -243,54 +376,124 @@
 </div>
 
 <style>
-    .timeline-horizontal {
-        position: relative;
-    }
-    .timeline-horizontal::before {
-        content: '';
-        position: absolute;
-        top: 30px;
-        left: 12.5%;
-        right: 12.5%;
-        height: 2px;
-        background: #dee2e6;
-        z-index: 0;
-    }
-    .timeline-step {
-        position: relative;
-        z-index: 1;
-    }
-    .timeline-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
-        font-size: 24px;
-        border: 4px solid white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .timeline-step.active .timeline-icon {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-    }
-    .timeline-step.completed::before {
-        background: var(--bs-primary);
-    }
+/* Timeline Styles */
+.timeline {
+    position: relative;
+    padding-left: 0;
+}
 
-    @media print {
-        .btn, form, .navbar, .footer {
-            display: none !important;
-        }
-        .card {
-            box-shadow: none !important;
-            border: 1px solid #dee2e6 !important;
-        }
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 30px;
+    bottom: 30px;
+    width: 3px;
+    background: linear-gradient(to bottom, #e9ecef 0%, #e9ecef 100%);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 80px;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 4px solid white;
+    z-index: 2;
+}
+
+.timeline-item.completed .timeline-marker {
+    animation: none;
+}
+
+.timeline-item.active .timeline-marker {
+    animation: pulse 2s infinite;
+    box-shadow: 0 4px 20px rgba(0,123,255,0.4);
+}
+
+.timeline-item.pending .timeline-marker {
+    background: #dee2e6 !important;
+    opacity: 0.6;
+}
+
+.timeline-item.pending .timeline-content {
+    opacity: 0.5;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
     }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Gradient backgrounds */
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* Print Styles */
+@media print {
+    .btn, form, .navbar, .footer, .input-group {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .timeline::before {
+        background: #000 !important;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .timeline-item {
+        padding-left: 70px;
+    }
+    .timeline-marker {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    .timeline::before {
+        left: 25px;
+    }
+}
 </style>
 @endsection

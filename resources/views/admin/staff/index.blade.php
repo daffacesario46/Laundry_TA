@@ -85,13 +85,20 @@
                                 <td>{{ $staff->firstItem() + $index }}</td>
                                 <td>
                                     @if($item->foto)
-                                        <img src="{{ Storage::url($item->foto) }}" class="img-xs rounded-circle" alt="User" />
+                                        <img src="{{ asset('storage/' . $item->foto) }}" 
+                                            class="img-sm rounded-circle" 
+                                            width="40" 
+                                            height="40"
+                                            style="object-fit: cover;"
+                                            alt="{{ $item->nama }}" />
                                     @else
-                                        <div class="avatar-placeholder">
-                                            <i class="material-icons md-person"></i>
+                                        <div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" 
+                                            style="width: 40px; height: 40px;">
+                                            <i class="material-icons" style="font-size: 20px;">person</i>
                                         </div>
                                     @endif
                                 </td>
+
                                 <td><strong>{{ $item->nama }}</strong></td>
                                 <td>{{ $item->email }}</td>
                                 <td>{{ $item->no_telp ?? '-' }}</td>
@@ -112,11 +119,15 @@
                                                data-bs-target="#modalEditStaff{{ $item->users_id }}">
                                                 <i class="material-icons md-edit"></i> Edit
                                             </a>
-                                            <a class="dropdown-item" href="#" 
-                                               onclick="toggleStatus({{ $item->users_id }}, '{{ $item->status }}')">
-                                                <i class="material-icons md-{{ $item->status == 'aktif' ? 'block' : 'check_circle' }}"></i> 
-                                                {{ $item->status == 'aktif' ? 'Non-aktifkan' : 'Aktifkan' }}
-                                            </a>
+                                            <form action="{{ route('admin.staff.toggle-status', $item->users_id) }}" 
+                                                  method="POST" 
+                                                  style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="material-icons md-{{ $item->status == 'aktif' ? 'block' : 'check_circle' }}"></i> 
+                                                    {{ $item->status == 'aktif' ? 'Non-aktifkan' : 'Aktifkan' }}
+                                                </button>
+                                            </form>
                                             <form action="{{ route('admin.staff.destroy', $item->users_id) }}" 
                                                   method="POST" 
                                                   onsubmit="return confirm('Yakin ingin menghapus staff ini?')">
@@ -171,37 +182,112 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" class="form-control" required>
+                            <input type="password" name="password" class="form-control" minlength="6" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Konfirmasi Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password_confirmation" class="form-control" required>
+                            <input type="password" name="password_confirmation" class="form-control" minlength="6" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">No. Telepon</label>
-                            <input type="text" name="no_telp" class="form-control">
+                            <input type="text" name="no_telp" class="form-control" placeholder="08xxx">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">No. WhatsApp</label>
-                            <input type="text" name="no_wa" class="form-control">
+                            <input type="text" name="no_wa" class="form-control" placeholder="08xxx">
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Alamat</label>
-                            <textarea name="alamat" class="form-control" rows="3"></textarea>
+                            <textarea name="alamat" class="form-control" rows="3" placeholder="Alamat lengkap..."></textarea>
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Foto Profile</label>
                             <input type="file" name="foto" class="form-control" accept="image/*">
+                            <small class="text-muted">Format: JPG, JPEG, PNG. Max: 2MB</small>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="material-icons md-save"></i> Simpan
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Modal Edit Staff (Loop) -->
+@foreach($staff as $item)
+<div class="modal fade" id="modalEditStaff{{ $item->users_id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Staff: {{ $item->nama }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('admin.staff.update', $item->users_id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                            <input type="text" name="nama" class="form-control" value="{{ $item->nama }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" value="{{ $item->email }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password Baru</label>
+                            <input type="password" name="password" class="form-control" minlength="6">
+                            <small class="text-muted">Kosongkan jika tidak ingin mengubah password</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Konfirmasi Password Baru</label>
+                            <input type="password" name="password_confirmation" class="form-control" minlength="6">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. Telepon</label>
+                            <input type="text" name="no_telp" class="form-control" value="{{ $item->no_telp }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. WhatsApp</label>
+                            <input type="text" name="no_wa" class="form-control" value="{{ $item->no_wa }}">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Alamat</label>
+                            <textarea name="alamat" class="form-control" rows="3">{{ $item->alamat }}</textarea>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Foto Profile</label>
+                            @if($item->foto)
+                                    <div class="mb-2">
+                                        <label class="form-label">Foto Saat Ini:</label><br>
+                                        <img src="{{ Storage::url($item->foto) }}" 
+                                            width="100" 
+                                            height="100"
+                                            style="object-fit: cover;"
+                                            class="rounded">
+                                    </div>
+                                @endif
+                            <input type="file" name="foto" class="form-control" accept="image/*">
+                            <small class="text-muted">Format: JPG, JPEG, PNG. Max: 2MB</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="material-icons md-save"></i> Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
 
 @endsection

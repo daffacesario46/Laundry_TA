@@ -1,52 +1,61 @@
-<main class="main-wrap">
-    <header class="main-header navbar">
-        <a href="{{ route('staff.dashboard') }}" class="navbar-brand p-0">
-            <h4 class="m-0 text-primary">Halo, Staff</h4>
-        </a>
-        <div class="col-nav">
-            <button class="btn btn-icon btn-mobile me-auto" data-trigger="#offcanvas_aside">
-                <i class="material-icons md-apps"></i>
-            </button>
-            <ul class="nav">
-                <li class="dropdown nav-item">
-                    <a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false">
-                        <img class="img-xs rounded-circle" src="{{ auth()->user()->img ?? asset('admins/imgs/people/avatar-2.png') }}" alt="User" />
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
+<header class="main-header navbar">
+    <a href="{{ route('staff.dashboard') }}" class="navbar-brand p-0">
+        <h4 class="m-0 text-primary">Halo, Staff</h4>
+    </a>
+    <div class="col-nav">
+        <button class="btn btn-icon btn-mobile me-auto" data-trigger="#offcanvas_aside">
+            <i class="material-icons md-apps"></i>
+        </button>
+        <ul class="nav">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img class="img-xs rounded-circle" 
+                         src="{{ auth()->user()->foto ? asset('storage/' . auth()->user()->foto) : asset('admins/imgs/people/avatar-2.png') }}" 
+                         alt="User" />
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
                         <a class="dropdown-item" href="{{ route('staff.dashboard') }}">
-                            <i class="material-icons md-dashboard"></i>Dashboard
+                            <i class="material-icons md-dashboard"></i> Dashboard
                         </a>
-                        <a class="dropdown-item" href="{{ route('staff.profile') }}">
-                            <i class="material-icons md-perm_identity"></i>Profile
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('staff.profile.index') }}">
+                            <i class="material-icons md-perm_identity"></i> Profile
                         </a>
-                        <div class="dropdown-divider"></div>
-                        <form onsubmit="submitLogout(this, event)" action="{{ route('logout') }}" method="POST">
-                            @csrf
-                            <button type="submit" class="dropdown-item text-danger cursor-pointer">
-                                <i class="material-icons md-exit_to_app"></i>Logout
-                            </button>
-                        </form>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </header>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmLogout()">
+                            <i class="material-icons md-exit_to_app"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</header>
 
-    <script>
-        function submitLogout(element, event){
-            event.preventDefault()
-            Swal.fire({
-                title: `Logout`,
-                text: "Anda Akan Keluar Aplikasi",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    element.submit();
-                }
-            });
+<!-- Form Logout (Hidden) -->
+<form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+    @csrf
+</form>
+
+<script>
+function confirmLogout() {
+    Swal.fire({
+        title: 'Logout',
+        text: "Anda akan keluar dari aplikasi",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Logout!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('logout-form').submit();
         }
-    </script>
+    });
+}
+</script>

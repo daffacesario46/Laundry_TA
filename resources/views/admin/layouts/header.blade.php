@@ -9,8 +9,7 @@
                 <li class="dropdown nav-item">
                     <a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false"> <img class="img-xs rounded-circle" src="{{ auth()->user()->img ?? asset('admins/imgs/people/avatar-2.png') }}" alt="User" /></a>
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
-							  <a class="dropdown-item" href="{{ route('admin.index') }}"><i class="material-icons md-dashboard"></i>Dashboard</a>
-                        <a class="dropdown-item" href="{{ route('admin.profile') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
+							  <a class="dropdown-item" href="{{ route('admin.dashboard') }}"><i class="material-icons md-dashboard"></i>Dashboard</a>
                         <div class="dropdown-divider"></div>
 								<form onsubmit="submitLogout(this, event)" action="{{ route('logout') }}" method="POST">
 									@csrf

@@ -20,14 +20,16 @@ class ProfileController extends Controller
         $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
         
         if (!$pelanggan) {
-            return redirect()->route('home')
-                ->with('error', 'Data pelanggan tidak ditemukan!');
+            return redirect()->route('pelanggan.profile.edit')
+                ->with('info', 'Lengkapi data profile Anda terlebih dahulu');
         }
         
         // Statistik pelanggan
         $totalOrder = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)->count();
-        $totalSpending = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)->sum('total_harga');
-        $memberSince = $user->created_at->diffForHumans();
+        $totalSpending = Cucian::where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->whereIn('status_cucian', ['selesai', 'diambil'])
+            ->sum('total_harga');
+        $memberSince = $user->created_at->format('d M Y');
         
         $stats = [
             'total_order' => $totalOrder,
@@ -51,7 +53,7 @@ class ProfileController extends Controller
         $user = Auth::user();
         $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
         
-        $request->validate([
+        $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->users_id . ',users_id',
             'no_telp' => 'required|string|max:20',
@@ -70,35 +72,39 @@ class ProfileController extends Controller
         DB::beginTransaction();
         try {
             // Update user
-            $user->update([
+            $userData = [
                 'nama' => $request->nama,
                 'email' => $request->email,
-                'no_telp' => $request->no_telp,
-                'no_wa' => $request->no_wa,
-                'alamat' => $request->alamat
-            ]);
+            ];
             
-            // Update pelanggan
-            $pelanggan->update([
+            $user->update($userData);
+            
+            // Update atau buat pelanggan
+            $pelangganData = [
                 'nama' => $request->nama,
                 'no_telp' => $request->no_telp,
                 'no_wa' => $request->no_wa,
                 'alamat' => $request->alamat
-            ]);
+            ];
+            
+            if ($pelanggan) {
+                $pelanggan->update($pelangganData);
+            } else {
+                // Buat pelanggan baru jika belum ada
+                $pelangganData['users_id'] = $user->users_id;
+                $pelangganData['kategori_pelanggan'] = 'umum';
+                $pelangganData['status'] = 'aktif';
+                $pelanggan = Pelanggan::create($pelangganData);
+            }
             
             // Upload foto jika ada
             if ($request->hasFile('foto')) {
                 // Hapus foto lama
-                if ($user->foto) {
-                    Storage::disk('public')->delete($user->foto);
+                if ($pelanggan->foto && Storage::disk('public')->exists($pelanggan->foto)) {
+                    Storage::disk('public')->delete($pelanggan->foto);
                 }
                 
                 $path = $request->file('foto')->store('pelanggan', 'public');
-                
-                // Update foto di user dan pelanggan
-                $user->foto = $path;
-                $user->save();
-                
                 $pelanggan->foto = $path;
                 $pelanggan->save();
             }
@@ -110,6 +116,7 @@ class ProfileController extends Controller
                 
         } catch (\Exception $e) {
             DB::rollback();
+            \Log::error('Profile Update Error: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Gagal update profile: ' . $e->getMessage())
                 ->withInput();
@@ -123,7 +130,7 @@ class ProfileController extends Controller
     
     public function updatePassword(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'current_password' => 'required',
             'new_password' => 'required|min:6|confirmed',
         ], [
@@ -141,84 +148,18 @@ class ProfileController extends Controller
                 ->with('error', 'Password saat ini tidak sesuai!');
         }
         
-        // Update password baru
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-        
-        return redirect()->route('pelanggan.profile.index')
-            ->with('success', 'Password berhasil diubah!');
-    }
-    
-    public function uploadPhoto(Request $request)
-    {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048'
-        ]);
-        
-        DB::beginTransaction();
         try {
-            // Hapus foto lama
-            if ($user->foto) {
-                Storage::disk('public')->delete($user->foto);
-            }
-            
-            // Upload foto baru
-            $path = $request->file('foto')->store('pelanggan', 'public');
-            
-            // Update foto di user dan pelanggan
-            $user->foto = $path;
+            // Update password baru
+            $user->password = Hash::make($request->new_password);
             $user->save();
             
-            if ($pelanggan) {
-                $pelanggan->foto = $path;
-                $pelanggan->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->back()
-                ->with('success', 'Foto profile berhasil diupdate!');
+            return redirect()->route('pelanggan.profile.index')
+                ->with('success', 'Password berhasil diubah!');
                 
         } catch (\Exception $e) {
-            DB::rollback();
+            \Log::error('Password Update Error: ' . $e->getMessage());
             return redirect()->back()
-                ->with('error', 'Gagal upload foto: ' . $e->getMessage());
-        }
-    }
-    
-    public function deletePhoto()
-    {
-        $user = Auth::user();
-        $pelanggan = Pelanggan::where('users_id', $user->users_id)->first();
-        
-        DB::beginTransaction();
-        try {
-            // Hapus foto
-            if ($user->foto) {
-                Storage::disk('public')->delete($user->foto);
-            }
-            
-            // Set foto null
-            $user->foto = null;
-            $user->save();
-            
-            if ($pelanggan) {
-                $pelanggan->foto = null;
-                $pelanggan->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->back()
-                ->with('success', 'Foto profile berhasil dihapus!');
-                
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()
-                ->with('error', 'Gagal hapus foto: ' . $e->getMessage());
+                ->with('error', 'Gagal mengubah password: ' . $e->getMessage());
         }
     }
 }

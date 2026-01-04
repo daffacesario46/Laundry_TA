@@ -26,7 +26,7 @@
                 <div class="card mx-auto card-login">
                     <div class="card-body">
                         <h4 class="card-title mb-4">Buat Akun Baru</h4>
-                        <form onsubmit="registerConfirmation(this, event)" action="{{ route('register') }}" method="POST">
+                        <form onsubmit="registerConfirmation(this, event)" action="{{ route('register.post') }}" method="POST">
 									@csrf
                             <div class="mb-3">
                                 <label class="form-label">Nama</label>

@@ -1,6 +1,6 @@
 @extends('pelanggan.layouts.app')
-@section('content')
 
+@section('content')
 <section class="content-main">
     <div class="content-header">
         <div>
@@ -14,6 +14,21 @@
         </div>
     </div>
 
+    {{-- Alert Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="material-icons md-check_circle"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="material-icons md-error"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="card mb-4">
         <header class="card-header">
             <form action="{{ route('pelanggan.order.index') }}" method="GET">
@@ -21,17 +36,17 @@
                     <div class="col-lg-4 col-md-6 mb-3">
                         <select class="form-select" name="status">
                             <option value="">Semua Status</option>
-                            <option {{ request()->query('status') == 'menunggu' ? 'selected' : '' }} value="menunggu">Menunggu</option>
-                            <option {{ request()->query('status') == 'proses' ? 'selected' : '' }} value="proses">Proses</option>
-                            <option {{ request()->query('status') == 'selesai' ? 'selected' : '' }} value="selesai">Selesai</option>
-                            <option {{ request()->query('status') == 'diambil' ? 'selected' : '' }} value="diambil">Diambil</option>
+                            <option value="menunggu" {{ request('status') == 'menunggu' ? 'selected' : '' }}>Menunggu</option>
+                            <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>Diproses</option>
+                            <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                            <option value="diambil" {{ request('status') == 'diambil' ? 'selected' : '' }}>Diambil</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
                         <select class="form-select" name="paginate">
-                            <option {{ request()->query('paginate') == 10 ? 'selected' : '' }} value="10">Show 10</option>
-                            <option {{ request()->query('paginate') == 20 ? 'selected' : '' }} value="20">Show 20</option>
-                            <option {{ request()->query('paginate') == 50 ? 'selected' : '' }} value="50">Show 50</option>
+                            <option value="10" {{ request('paginate') == 10 ? 'selected' : '' }}>Show 10</option>
+                            <option value="20" {{ request('paginate') == 20 ? 'selected' : '' }}>Show 20</option>
+                            <option value="50" {{ request('paginate') == 50 ? 'selected' : '' }}>Show 50</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
@@ -52,12 +67,17 @@
 
         <div class="card-body">
             @if($orders->isEmpty())
-                <div class="alert alert-info text-center">
-                    <i class="material-icons md-info"></i>
-                    Anda belum memiliki order
+                <div class="alert alert-info text-center py-5">
+                    <i class="material-icons md-inbox" style="font-size: 64px; opacity: 0.5;"></i>
+                    <h5 class="mt-3">Belum Ada Order</h5>
+                    <p class="text-muted">Anda belum memiliki order
                     @if(request()->filled('status'))
-                        dengan status "<strong>{{ request()->status }}</strong>"
+                        dengan status "<strong>{{ request('status') }}</strong>"
                     @endif
+                    </p>
+                    <a href="{{ route('pelanggan.order.create') }}" class="btn btn-primary mt-2">
+                        <i class="material-icons md-add"></i> Buat Order Pertama
+                    </a>
                 </div>
             @else
                 <div class="table-responsive">
@@ -66,42 +86,41 @@
                             <tr>
                                 <th>No. Order</th>
                                 <th>Tanggal</th>
-                                <th>Jenis Layanan</th>
-                                <th>Berat (kg)</th>
+                                <th>Layanan</th>
+                                <th>Total Item</th>
                                 <th>Total Harga</th>
-                                <th>Status</th>
+                                <th>Status Cucian</th>
                                 <th>Pembayaran</th>
-                                <th>Action</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($orders as $order)
                             <tr>
-                                <td><strong>{{ $order->no_order }}</strong></td>
-                                <td>{{ \Carbon\Carbon::parse($order->tanggal_order)->format('d M Y H:i') }}</td>
-                                <td>{{ $order->jenis_layanan }}</td>
-                                <td>{{ $order->berat }} kg</td>
-                                <td>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</td>
+                                <td><strong>{{ $order->getNoOrder() }}</strong></td>
+                                <td>{{ $order->tgl_order->format('d M Y H:i') }}</td>
+                                <td>{{ $order->layanan->nama_layanan ?? '-' }}</td>
+                                <td>{{ $order->total_item }} item</td>
+                                <td>{{ $order->getFormattedTotalHarga() }}</td>
                                 <td>
-                                    @if($order->status == 'menunggu')
-                                        <span class="badge bg-warning">Menunggu</span>
-                                    @elseif($order->status == 'proses')
-                                        <span class="badge bg-info">Proses</span>
-                                    @elseif($order->status == 'selesai')
-                                        <span class="badge bg-success">Selesai</span>
-                                    @else
-                                        <span class="badge bg-secondary">Diambil</span>
-                                    @endif
+                                    <span class="badge rounded-pill {{ $order->getStatusBadge() }}">
+                                        {{ $order->getStatusLabel() }}
+                                    </span>
                                 </td>
                                 <td>
-                                    @if($order->status_pembayaran == 'sudah_bayar')
-                                        <span class="badge bg-success">Lunas</span>
+                                    @if($order->pembayaran)
+                                        @if($order->pembayaran->status_bayar == 'lunas')
+                                            <span class="badge bg-success">Lunas</span>
+                                        @else
+                                            <span class="badge bg-danger">Belum Lunas</span>
+                                        @endif
                                     @else
-                                        <span class="badge bg-danger">Belum Bayar</span>
+                                        <span class="badge bg-secondary">-</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <a href="{{ route('pelanggan.order.show', $order->id) }}" class="btn btn-sm btn-primary">
+                                <td class="text-end">
+                                    <a href="{{ route('pelanggan.order.show', $order->cucian_id) }}" 
+                                       class="btn btn-sm btn-primary">
                                         <i class="material-icons md-visibility"></i> Detail
                                     </a>
                                 </td>
@@ -112,17 +131,21 @@
                 </div>
             @endif
         </div>
+
+        @if($orders->hasPages())
+            <div class="card-footer">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0">Menampilkan {{ $orders->firstItem() ?? 0 }} sampai {{ $orders->lastItem() ?? 0 }} dari {{ $orders->total() }} data</p>
+                    </div>
+                    <div class="col-md-6">
+                        <nav class="float-end">
+                            {{ $orders->links() }}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
-
-    @if($orders->hasPages())
-        <div class="pagination-area mt-15 mb-50">
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-start">
-                    {{ $orders->links() }}
-                </ul>
-            </nav>
-        </div>
-    @endif
 </section>
-
 @endsection

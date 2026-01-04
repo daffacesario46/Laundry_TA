@@ -17,6 +17,14 @@
                 </a>
             </li>
 
+            <!-- Laporan Keuangan -->
+            <li class="menu-item {{ request()->routeIs('admin.laporan*') ? 'active' : '' }}">
+                <a class="menu-link" href="{{ route('admin.laporan.index') }}">
+                    <i class="icon material-icons md-assessment"></i>
+                    <span class="text">Laporan Keuangan</span>
+                </a>
+            </li>
+
             <!-- Divider -->
             <li class="menu-item">
                 <span class="text-muted text-uppercase small px-3 mt-3 mb-2 d-block">Master Data</span>

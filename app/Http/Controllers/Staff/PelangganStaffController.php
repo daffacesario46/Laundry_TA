@@ -9,9 +9,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
-class PelangganController extends Controller
+class PelangganStaffController extends Controller
 {
+    /**
+     * Display listing of pelanggan
+     */
     public function index(Request $request)
     {
         $perPage = $request->get('paginate', 15);
@@ -34,78 +38,92 @@ class PelangganController extends Controller
         }
         
         // Filter berdasarkan kategori
-        if ($request->filled('kategori_pelanggan')) {
-            $query->where('kategori_pelanggan', $request->kategori_pelanggan);
+        if ($request->filled('kategori')) {
+            $query->where('kategori_pelanggan', $request->kategori);
         }
         
-        $pelanggan = $query->orderBy('pelanggan_id', 'desc')->paginate($perPage);
+        $pelanggan = $query->orderBy('created_at', 'desc')
+                           ->paginate($perPage)
+                           ->appends($request->except('page'));
         
         return view('staff.pelanggan.index', compact('pelanggan'));
     }
 
+    /**
+     * Show form for creating new pelanggan
+     */
     public function create()
     {
         return view('staff.pelanggan.create');
     }
 
+    /**
+     * Store new pelanggan
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'kategori_pelanggan' => 'required|in:member,reguler',
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
             'no_telp' => 'required|string|max:20',
             'no_wa' => 'nullable|string|max:20',
-            'alamat' => 'nullable|string',
+            'alamat' => 'required|string',
+            'kategori_pelanggan' => 'required|in:umum,member',
+            'email' => 'nullable|email|unique:users,email',
+            'password' => 'nullable|string|min:6|confirmed',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            
-            // Jika member, perlu email & password
-            'email' => 'required_if:kategori_pelanggan,member|nullable|email|unique:users,email',
-            'password' => 'required_if:kategori_pelanggan,member|nullable|string|min:6|confirmed',
+        ], [
+            'nama.required' => 'Nama harus diisi',
+            'no_telp.required' => 'Nomor telepon harus diisi',
+            'alamat.required' => 'Alamat harus diisi',
+            'kategori_pelanggan.required' => 'Kategori pelanggan harus dipilih',
+            'email.unique' => 'Email sudah terdaftar',
+            'password.min' => 'Password minimal 6 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+            'foto.image' => 'File harus berupa gambar',
+            'foto.mimes' => 'Format foto harus jpeg, png, atau jpg',
+            'foto.max' => 'Ukuran foto maksimal 2MB',
         ]);
         
         DB::beginTransaction();
         try {
-            $userId = null;
+            $userData = null;
             
-            // Jika kategori member, buat user account
-            if ($request->kategori_pelanggan === 'member') {
-                $user = User::create([
+            // Buat user jika email & password diisi
+            if ($request->filled('email') && $request->filled('password')) {
+                $userData = [
                     'role' => 'pelanggan',
                     'nama' => $request->nama,
                     'email' => $request->email,
                     'password' => Hash::make($request->password),
-                    'no_telp' => $request->no_telp,
-                    'no_wa' => $request->no_wa,
-                    'alamat' => $request->alamat,
-                    'status' => 'aktif'
-                ]);
+                    'status' => 'aktif',
+                ];
                 
-                $userId = $user->users_id;
+                $user = User::create($userData);
+                $usersId = $user->users_id;
+            } else {
+                $usersId = null;
             }
             
             // Buat pelanggan
-            $pelanggan = Pelanggan::create([
-                'users_id' => $userId,
+            $pelangganData = [
+                'users_id' => $usersId,
                 'kategori_pelanggan' => $request->kategori_pelanggan,
                 'nama' => $request->nama,
                 'no_telp' => $request->no_telp,
                 'no_wa' => $request->no_wa,
                 'alamat' => $request->alamat,
-                'status' => 'aktif'
-            ]);
+                'status' => 'aktif',
+            ];
             
-            // Upload foto jika ada
+            // ✅ IMPROVED: Handle foto dengan nama file yang lebih baik
             if ($request->hasFile('foto')) {
-                $path = $request->file('foto')->store('pelanggan', 'public');
-                $pelanggan->foto = $path;
-                $pelanggan->save();
-                
-                // Update foto di user juga jika member
-                if ($userId) {
-                    $user->foto = $path;
-                    $user->save();
-                }
+                $file = $request->file('foto');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('pelanggan', $filename, 'public');
+                $pelangganData['foto'] = $path;
             }
+            
+            $pelanggan = Pelanggan::create($pelangganData);
             
             DB::commit();
             
@@ -114,91 +132,85 @@ class PelangganController extends Controller
                 
         } catch (\Exception $e) {
             DB::rollback();
+            \Log::error('Pelanggan Store Error: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Gagal menambahkan pelanggan: ' . $e->getMessage())
                 ->withInput();
         }
     }
 
-    public function show($id)
-    {
-        $pelanggan = Pelanggan::with(['user', 'cucian' => function($q) {
-            $q->orderBy('tgl_order', 'desc')->take(10);
-        }])->findOrFail($id);
-        
-        // Statistik pelanggan
-        $totalOrder = $pelanggan->cucian()->count();
-        $totalSpending = $pelanggan->cucian()->sum('total_harga');
-        $orderSelesai = $pelanggan->cucian()->where('status_cucian', 'selesai')->count();
-        
-        return view('staff.pelanggan.detail', compact('pelanggan', 'totalOrder', 'totalSpending', 'orderSelesai'));
-    }
-
+    /**
+     * Show edit form
+     */
     public function edit($id)
     {
         $pelanggan = Pelanggan::with('user')->findOrFail($id);
+        
         return view('staff.pelanggan.edit', compact('pelanggan'));
     }
 
+    /**
+     * Update pelanggan
+     */
     public function update(Request $request, $id)
     {
         $pelanggan = Pelanggan::findOrFail($id);
         
-        $request->validate([
-            'nama' => 'required|string|max:100',
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
             'no_telp' => 'required|string|max:20',
             'no_wa' => 'nullable|string|max:20',
-            'alamat' => 'nullable|string',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            
-            // Jika member dan ada user
-            'email' => $pelanggan->users_id ? 'required|email|unique:users,email,' . $pelanggan->users_id . ',users_id' : 'nullable',
+            'alamat' => 'required|string',
+            'kategori_pelanggan' => 'required|in:umum,member',
+            'status' => 'required|in:aktif,nonaktif',
+            'email' => 'nullable|email|unique:users,email,' . ($pelanggan->users_id ?? 'NULL') . ',users_id',
             'password' => 'nullable|string|min:6|confirmed',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         
         DB::beginTransaction();
         try {
-            // Update pelanggan
-            $pelanggan->update([
+            // Update pelanggan data
+            $pelangganData = [
                 'nama' => $request->nama,
                 'no_telp' => $request->no_telp,
                 'no_wa' => $request->no_wa,
-                'alamat' => $request->alamat
-            ]);
+                'alamat' => $request->alamat,
+                'kategori_pelanggan' => $request->kategori_pelanggan,
+                'status' => $request->status,
+            ];
             
-            // Update user jika ada
-            if ($pelanggan->users_id && $pelanggan->user) {
-                $pelanggan->user->update([
-                    'nama' => $request->nama,
-                    'email' => $request->email,
-                    'no_telp' => $request->no_telp,
-                    'no_wa' => $request->no_wa,
-                    'alamat' => $request->alamat
-                ]);
-                
-                // Update password jika diisi
-                if ($request->filled('password')) {
-                    $pelanggan->user->password = Hash::make($request->password);
-                    $pelanggan->user->save();
-                }
-            }
-            
-            // Upload foto baru jika ada
+            // ✅ IMPROVED: Handle foto dengan nama file yang lebih baik
             if ($request->hasFile('foto')) {
                 // Hapus foto lama
-                if ($pelanggan->foto) {
+                if ($pelanggan->foto && Storage::disk('public')->exists($pelanggan->foto)) {
                     Storage::disk('public')->delete($pelanggan->foto);
                 }
                 
-                $path = $request->file('foto')->store('pelanggan', 'public');
-                $pelanggan->foto = $path;
-                $pelanggan->save();
+                $file = $request->file('foto');
+                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('pelanggan', $filename, 'public');
+                $pelangganData['foto'] = $path;
+            }
+            
+            $pelanggan->update($pelangganData);
+            
+            // Update user jika ada
+            if ($pelanggan->user) {
+                $userData = [
+                    'nama' => $request->nama,
+                    'status' => $request->status,
+                ];
                 
-                // Update foto di user juga
-                if ($pelanggan->user) {
-                    $pelanggan->user->foto = $path;
-                    $pelanggan->user->save();
+                if ($request->filled('email')) {
+                    $userData['email'] = $request->email;
                 }
+                
+                if ($request->filled('password')) {
+                    $userData['password'] = Hash::make($request->password);
+                }
+                
+                $pelanggan->user->update($userData);
             }
             
             DB::commit();
@@ -208,35 +220,73 @@ class PelangganController extends Controller
                 
         } catch (\Exception $e) {
             DB::rollback();
+            \Log::error('Pelanggan Update Error: ' . $e->getMessage());
             return redirect()->back()
-                ->with('error', 'Gagal update pelanggan: ' . $e->getMessage())
+                ->with('error', 'Gagal mengupdate pelanggan: ' . $e->getMessage())
                 ->withInput();
         }
     }
 
+    /**
+     * ✅ NEW: Delete foto pelanggan
+     */
+    public function deleteFoto($id)
+    {
+        $pelanggan = Pelanggan::findOrFail($id);
+        
+        if (!$pelanggan->foto) {
+            return redirect()->back()
+                ->with('info', 'Pelanggan tidak memiliki foto');
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Hapus file foto dari storage
+            if (Storage::disk('public')->exists($pelanggan->foto)) {
+                Storage::disk('public')->delete($pelanggan->foto);
+            }
+            
+            // Update database
+            $pelanggan->update(['foto' => null]);
+            
+            DB::commit();
+            
+            return redirect()->back()
+                ->with('success', 'Foto pelanggan berhasil dihapus!');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Delete Foto Error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus foto: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete pelanggan
+     */
     public function destroy($id)
     {
         $pelanggan = Pelanggan::findOrFail($id);
         
         // Cek apakah pelanggan punya cucian
-        if ($pelanggan->cucian()->count() > 0) {
+        if ($pelanggan->cucian()->exists()) {
             return redirect()->route('staff.pelanggan.index')
-                ->with('error', 'Pelanggan tidak dapat dihapus karena memiliki riwayat cucian!');
+                ->with('error', 'Pelanggan tidak bisa dihapus karena masih memiliki data cucian!');
         }
         
         DB::beginTransaction();
         try {
-            // Hapus foto jika ada
-            if ($pelanggan->foto) {
+            // Hapus foto
+            if ($pelanggan->foto && Storage::disk('public')->exists($pelanggan->foto)) {
                 Storage::disk('public')->delete($pelanggan->foto);
             }
             
             // Hapus user jika ada
-            if ($pelanggan->users_id && $pelanggan->user) {
+            if ($pelanggan->user) {
                 $pelanggan->user->delete();
             }
             
-            // Hapus pelanggan
             $pelanggan->delete();
             
             DB::commit();
@@ -246,24 +296,9 @@ class PelangganController extends Controller
                 
         } catch (\Exception $e) {
             DB::rollback();
+            \Log::error('Pelanggan Delete Error: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Gagal menghapus pelanggan: ' . $e->getMessage());
         }
-    }
-    
-    public function toggleStatus($id)
-    {
-        $pelanggan = Pelanggan::findOrFail($id);
-        $pelanggan->status = $pelanggan->status == 'aktif' ? 'nonaktif' : 'aktif';
-        $pelanggan->save();
-        
-        // Update status di user juga jika ada
-        if ($pelanggan->user) {
-            $pelanggan->user->status = $pelanggan->status;
-            $pelanggan->user->save();
-        }
-        
-        return redirect()->route('staff.pelanggan.index')
-            ->with('success', 'Status pelanggan berhasil diubah!');
     }
 }

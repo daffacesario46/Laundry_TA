@@ -16,6 +16,7 @@ class Cucian extends Model
     protected $fillable = [
         'pelanggan_id',
         'layanan_id',
+        'jenis_cucian', // ✅ TAMBAHAN BARU
         'jenis_order',
         'jenis_ambil',
         'tgl_order',
@@ -26,7 +27,9 @@ class Cucian extends Model
         'total_berat',
         'total_harga',
         'status_cucian',
-        'catatan'
+        'catatan',
+        'staff_jemput_id',
+        'kurir_antar_id'
     ];
 
     protected $casts = [
@@ -34,8 +37,6 @@ class Cucian extends Model
         'estimasi' => 'datetime',
         'tgl_selesai' => 'datetime',
         'tgl_diambil' => 'datetime',
-        'total_berat' => 'double',
-        'total_harga' => 'double',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -61,10 +62,132 @@ class Cucian extends Model
         return $this->hasOne(Pembayaran::class, 'cucian_id', 'cucian_id');
     }
 
-    // Helpers
+    public function penjemputan()
+    {
+        return $this->hasOne(Penjemputan::class, 'cucian_id', 'cucian_id');
+    }
+
+    public function pengantaran()
+    {
+        return $this->hasOne(Pengantaran::class, 'cucian_id', 'cucian_id');
+    }
+
+    public function staffJemput()
+    {
+        return $this->belongsTo(User::class, 'staff_jemput_id', 'users_id');
+    }
+
+    public function kurirAntar()
+    {
+        return $this->belongsTo(User::class, 'kurir_antar_id', 'users_id');
+    }
+
+    // ✅ TAMBAHAN BARU: Helper method untuk cek jenis cucian
+    public function isKiloan()
+    {
+        return $this->jenis_cucian === 'kiloan';
+    }
+
+    public function isSatuan()
+    {
+        return $this->jenis_cucian === 'satuan';
+    }
+
+    public function getJenisCucianLabel()
+    {
+        return $this->jenis_cucian ? ucfirst($this->jenis_cucian) : '-';
+    }
+
+    // Helper Methods
     public function getNoOrder()
     {
         return 'WW' . str_pad($this->cucian_id, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function getStatusBadge()
+    {
+        return match($this->status_cucian) {
+            'menunggu' => 'bg-warning',
+            'diproses' => 'bg-info',
+            'selesai' => 'bg-success',
+            'diambil' => 'bg-secondary',
+            default => 'bg-light'
+        };
+    }
+
+    public function getStatusLabel()
+    {
+        return match($this->status_cucian) {
+            'menunggu' => 'Menunggu',
+            'diproses' => 'Diproses',
+            'selesai' => 'Selesai',
+            'diambil' => 'Diambil',
+            default => ucfirst($this->status_cucian)
+        };
+    }
+
+    // Payment Check Methods
+    public function hasPembayaran()
+    {
+        return $this->pembayaran !== null;
+    }
+
+    public function isPaid()
+    {
+        return $this->pembayaran && $this->pembayaran->status_bayar === 'lunas';
+    }
+
+    public function isUnpaid()
+    {
+        return !$this->pembayaran || $this->pembayaran->status_bayar === 'belum';
+    }
+
+    public function isPenjemputanSelesai()
+    {
+        return $this->penjemputan && $this->penjemputan->status === 'selesai';
+    }
+
+    public function canBeProcessed()
+    {
+        if ($this->jenis_order === 'offline') {
+            return $this->isPaid();
+        }
+        
+        if ($this->jenis_order === 'online') {
+            return $this->isPenjemputanSelesai() && $this->isPaid();
+        }
+        
+        return false;
+    }
+
+    public function canBeDelivered()
+    {
+        return $this->status_cucian === 'selesai' 
+               && $this->jenis_order === 'online'
+               && $this->jenis_ambil === 'diantar';
+    }
+
+    public function getCannotProcessReason()
+    {
+        if ($this->jenis_order === 'offline') {
+            if ($this->isUnpaid()) {
+                return 'Pembayaran belum lunas';
+            }
+        }
+        
+        if ($this->jenis_order === 'online') {
+            if (!$this->penjemputan) {
+                return 'Belum ada penjemputan';
+            }
+            if ($this->penjemputan->status !== 'selesai') {
+                return 'Penjemputan belum selesai (Status: ' . ucfirst($this->penjemputan->status) . ')';
+            }
+            if ($this->isUnpaid()) {
+                return 'Pembayaran belum lunas';
+            }
+        }
+        
+        return null;
     }
 
     public function isOnline()
@@ -72,50 +195,21 @@ class Cucian extends Model
         return $this->jenis_order === 'online';
     }
 
-    public function isDiantar()
+    public function isOffline()
+    {
+        return $this->jenis_order === 'offline';
+    }
+
+    public function needsDelivery()
     {
         return $this->jenis_ambil === 'diantar';
     }
 
-    public function getStatusBadge()
-    {
-        $badges = [
-            'menunggu' => 'alert-warning',
-            'diproses' => 'alert-info',
-            'selesai' => 'alert-success',
-            'diambil' => 'alert-secondary'
-        ];
-        return $badges[$this->status_cucian] ?? 'alert-secondary';
-    }
-
-    public function getStatusLabel()
-    {
-        $labels = [
-            'menunggu' => 'Menunggu',
-            'diproses' => 'Proses',
-            'selesai' => 'Selesai',
-            'diambil' => 'Diambil'
-        ];
-        return $labels[$this->status_cucian] ?? 'Unknown';
-    }
-
     public function getFormattedTotalHarga()
     {
-        return 'Rp ' . number_format($this->total_harga, 0, ',', '.');
-    }
-
-    public function hasPembayaran()
-    {
-        return $this->pembayaran()->exists();
-    }
-
-    public function isPaid()
-    {
-        return $this->hasPembayaran() && $this->pembayaran->status_bayar === 'lunas';
-    }
-
-    public function isUnpaid()
-    {
-        return !$this->hasPembayaran() || $this->pembayaran->status_bayar === 'belum';
+        if ($this->total_harga) {
+            return 'Rp ' . number_format($this->total_harga, 0, ',', '.');
+        }
+        return '-';
     }
 }

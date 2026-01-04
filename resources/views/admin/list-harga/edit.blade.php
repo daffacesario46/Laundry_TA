@@ -18,76 +18,55 @@
         <div class="col-lg-8">
             <div class="card mb-4">
                 <div class="card-body">
-                    <form action="{{ route('admin.list-harga.update', $listHarga->id) }}" method="POST">
+                    <form action="{{ route('admin.list-harga.update', $listHarga->list_harga_id) }}" method="POST">
                         @csrf
                         @method('PUT')
                         
                         <div class="mb-4">
-                            <label class="form-label">Jenis Cucian <span class="text-danger">*</span></label>
-                            <select class="form-select @error('jenis_cucian') is-invalid @enderror" name="jenis_cucian" required>
-                                <option value="">Pilih Jenis Cucian</option>
-                                <option value="Kiloan" {{ old('jenis_cucian', $listHarga->jenis_cucian) == 'Kiloan' ? 'selected' : '' }}>Kiloan</option>
-                                <option value="Satuan" {{ old('jenis_cucian', $listHarga->jenis_cucian) == 'Satuan' ? 'selected' : '' }}>Satuan</option>
-                                <option value="Karpet" {{ old('jenis_cucian', $listHarga->jenis_cucian) == 'Karpet' ? 'selected' : '' }}>Karpet</option>
-                                <option value="Bed Cover" {{ old('jenis_cucian', $listHarga->jenis_cucian) == 'Bed Cover' ? 'selected' : '' }}>Bed Cover</option>
-                                <option value="Boneka" {{ old('jenis_cucian', $listHarga->jenis_cucian) == 'Boneka' ? 'selected' : '' }}>Boneka</option>
-                            </select>
-                            @error('jenis_cucian')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Layanan <span class="text-danger">*</span></label>
+                            <label class="form-label">Nama Item <span class="text-danger">*</span></label>
                             <input type="text" 
-                                   class="form-control @error('layanan') is-invalid @enderror" 
-                                   name="layanan" 
-                                   value="{{ old('layanan', $listHarga->layanan) }}"
+                                   class="form-control @error('nama_item') is-invalid @enderror" 
+                                   name="nama_item" 
+                                   value="{{ old('nama_item', $listHarga->nama_item) }}"
                                    required />
-                            @error('layanan')
+                            @error('nama_item')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-4">
-                                <label class="form-label">Harga <span class="text-danger">*</span></label>
+                                <label class="form-label">Harga Satuan <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">Rp</span>
                                     <input type="number" 
-                                           class="form-control @error('harga') is-invalid @enderror" 
-                                           name="harga" 
-                                           value="{{ old('harga', $listHarga->harga) }}"
+                                           class="form-control @error('harga_satuan') is-invalid @enderror" 
+                                           name="harga_satuan" 
+                                           value="{{ old('harga_satuan', $listHarga->harga_satuan) }}"
                                            min="0"
                                            required />
-                                    @error('harga')
+                                    @error('harga_satuan')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <small class="text-muted">Harga per pcs/item</small>
                             </div>
 
                             <div class="col-md-6 mb-4">
-                                <label class="form-label">Satuan <span class="text-danger">*</span></label>
-                                <select class="form-select @error('satuan') is-invalid @enderror" name="satuan" required>
-                                    <option value="">Pilih Satuan</option>
-                                    <option value="kg" {{ old('satuan', $listHarga->satuan) == 'kg' ? 'selected' : '' }}>Kilogram (kg)</option>
-                                    <option value="pcs" {{ old('satuan', $listHarga->satuan) == 'pcs' ? 'selected' : '' }}>Pieces (pcs)</option>
-                                    <option value="unit" {{ old('satuan', $listHarga->satuan) == 'unit' ? 'selected' : '' }}>Unit</option>
-                                </select>
-                                @error('satuan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <label class="form-label">Harga Kiloan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" 
+                                           class="form-control @error('harga_kiloan') is-invalid @enderror" 
+                                           name="harga_kiloan" 
+                                           value="{{ old('harga_kiloan', $listHarga->harga_kiloan) }}"
+                                           min="0" />
+                                    @error('harga_kiloan')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="text-muted">Harga per kg (opsional)</small>
                             </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Deskripsi</label>
-                            <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
-                                      name="deskripsi" 
-                                      rows="4">{{ old('deskripsi', $listHarga->deskripsi) }}</textarea>
-                            @error('deskripsi')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <div class="d-flex gap-2">
@@ -108,6 +87,9 @@
                 <div class="card-body">
                     <h5 class="card-title">Informasi Data</h5>
                     <p class="text-muted small mb-2">
+                        <strong>ID:</strong> {{ $listHarga->list_harga_id }}
+                    </p>
+                    <p class="text-muted small mb-2">
                         <strong>Dibuat:</strong><br>
                         {{ \Carbon\Carbon::parse($listHarga->created_at)->format('d M Y H:i') }}
                     </p>
@@ -115,6 +97,23 @@
                         <strong>Terakhir Diupdate:</strong><br>
                         {{ \Carbon\Carbon::parse($listHarga->updated_at)->format('d M Y H:i') }}
                     </p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Status Penggunaan</h5>
+                    @if($listHarga->cucianDetail()->count() > 0)
+                        <div class="alert alert-warning">
+                            <i class="material-icons md-warning"></i>
+                            Item ini sedang digunakan dalam <strong>{{ $listHarga->cucianDetail()->count() }}</strong> transaksi cucian
+                        </div>
+                    @else
+                        <div class="alert alert-success">
+                            <i class="material-icons md-check_circle"></i>
+                            Item ini belum pernah digunakan
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@
     <div class="content-header">
         <div>
             <h2 class="content-title card-title">Detail Cucian</h2>
-            <p>Order #{{ $cucian->no_order }}</p>
+            <p>Order #{{ $cucian->getNoOrder() }}</p>
         </div>
         <div>
             <a href="{{ route('admin.dashboard') }}" class="btn btn-light">
@@ -25,35 +25,48 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <p class="mb-2"><strong>No. Order:</strong></p>
-                            <p class="text-muted">{{ $cucian->no_order }}</p>
+                            <p class="text-muted">{{ $cucian->getNoOrder() }}</p>
                         </div>
                         <div class="col-md-6">
                             <p class="mb-2"><strong>Status:</strong></p>
-                            <span class="badge bg-success">{{ ucfirst($cucian->status) }}</span>
+                            <span class="badge {{ $cucian->getStatusBadge() }}">{{ $cucian->getStatusLabel() }}</span>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <p class="mb-2"><strong>Jenis Order:</strong></p>
-                            <span class="badge bg-primary">{{ ucfirst($cucian->jenis_order) }}</span>
+                            <span class="badge {{ $cucian->jenis_order == 'online' ? 'bg-success' : 'bg-info' }}">
+                                {{ ucfirst($cucian->jenis_order) }}
+                            </span>
                         </div>
                         <div class="col-md-6">
                             <p class="mb-2"><strong>Jenis Ambil:</strong></p>
                             <span class="badge {{ $cucian->jenis_ambil == 'diantar' ? 'bg-info' : 'bg-secondary' }}">
-                                {{ ucfirst($cucian->jenis_ambil) }}
+                                {{ ucfirst(str_replace('_', ' ', $cucian->jenis_ambil)) }}
                             </span>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <p class="mb-2"><strong>Waktu Diterima:</strong></p>
-                            <p class="text-muted">{{ \Carbon\Carbon::parse($cucian->wkt_diterima)->format('d M Y H:i') }}</p>
+                            <p class="mb-2"><strong>Tanggal Order:</strong></p>
+                            <p class="text-muted">{{ \Carbon\Carbon::parse($cucian->tgl_order)->format('d M Y H:i') }}</p>
                         </div>
                         <div class="col-md-6">
-                            <p class="mb-2"><strong>Waktu Diambil:</strong></p>
-                            <p class="text-muted">{{ \Carbon\Carbon::parse($cucian->wkt_diambil)->format('d M Y H:i') }}</p>
+                            <p class="mb-2"><strong>Tanggal Selesai:</strong></p>
+                            <p class="text-muted">{{ $cucian->tgl_selesai ? \Carbon\Carbon::parse($cucian->tgl_selesai)->format('d M Y H:i') : '-' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Tanggal Diambil:</strong></p>
+                            <p class="text-muted">{{ $cucian->tgl_diambil ? \Carbon\Carbon::parse($cucian->tgl_diambil)->format('d M Y H:i') : '-' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Estimasi Selesai:</strong></p>
+                            <p class="text-muted">{{ $cucian->estimasi ? \Carbon\Carbon::parse($cucian->estimasi)->format('d M Y H:i') : '-' }}</p>
                         </div>
                     </div>
 
@@ -82,62 +95,117 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Nama Item</th>
-                                    <th>Layanan</th>
-                                    <th>Jumlah</th>
+                                    <th>Jumlah/Berat</th>
                                     <th>Harga</th>
                                     <th>Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($cucian->items as $index => $item)
+                                @foreach($cucian->detail as $index => $item)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td><strong>{{ $item->nama_item }}</strong></td>
-                                    <td>{{ $item->layanan }}</td>
-                                    <td>{{ $item->jumlah }} pcs</td>
-                                    <td>Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
-                                    <td><strong>Rp {{ number_format($item->harga * $item->jumlah, 0, ',', '.') }}</strong></td>
+                                    <td>
+                                        <strong>{{ $item->listHarga->nama_item }}</strong>
+                                        @if($item->deskripsi)
+                                            <br><small class="text-muted">{{ $item->deskripsi }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($item->berat_kg)
+                                            {{ $item->berat_kg }} kg
+                                        @else
+                                            {{ $item->jumlah }} pcs
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($item->berat_kg && $item->listHarga->harga_kiloan)
+                                            {{ $item->listHarga->getFormattedHargaKiloan() }}
+                                        @else
+                                            {{ $item->listHarga->getFormattedHargaSatuan() }}
+                                        @endif
+                                    </td>
+                                    <td><strong>{{ $item->getFormattedSubtotal() }}</strong></td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="5" class="text-end"><strong>Total:</strong></td>
-                                    <td><strong class="text-primary">Rp {{ number_format($cucian->total_harga, 0, ',', '.') }}</strong></td>
+                                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong class="text-primary">{{ $cucian->getFormattedTotalHarga() }}</strong></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
+
+            <!-- Info Pembayaran -->
+            @if($cucian->pembayaran)
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Informasi Pembayaran</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Status Pembayaran:</strong></p>
+                            <span class="badge {{ $cucian->pembayaran->getStatusBadge() }}">
+                                {{ $cucian->pembayaran->getStatusLabel() }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Metode Bayar:</strong></p>
+                            <p class="text-muted">{{ $cucian->pembayaran->getMetodeBayarLabel() }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Jumlah Bayar:</strong></p>
+                            <p class="text-muted">{{ $cucian->pembayaran->getFormattedJumlahBayar() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Tanggal Bayar:</strong></p>
+                            <p class="text-muted">{{ $cucian->pembayaran->tgl_bayar ? \Carbon\Carbon::parse($cucian->pembayaran->tgl_bayar)->format('d M Y H:i') : '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Informasi Customer -->
         <div class="col-lg-4">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="card-title">Informasi Customer</h5>
+                    <h5 class="card-title">Informasi Pelanggan</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <p class="mb-2"><strong>Nama User:</strong></p>
-                        <p class="text-muted">{{ $cucian->user->nama }}</p>
+                        <p class="mb-2"><strong>Nama Pelanggan:</strong></p>
+                        <p class="text-muted">{{ $cucian->pelanggan->nama }}</p>
                     </div>
 
                     <div class="mb-3">
-                        <p class="mb-2"><strong>Atas Nama:</strong></p>
-                        <p class="text-muted">{{ $cucian->atas_nama }}</p>
+                        <p class="mb-2"><strong>Kategori:</strong></p>
+                        <span class="badge {{ $cucian->pelanggan->isMember() ? 'bg-success' : 'bg-secondary' }}">
+                            {{ ucfirst($cucian->pelanggan->kategori_pelanggan) }}
+                        </span>
                     </div>
 
                     <div class="mb-3">
                         <p class="mb-2"><strong>No. Telepon:</strong></p>
-                        <p class="text-muted">{{ $cucian->user->telp }}</p>
+                        <p class="text-muted">{{ $cucian->pelanggan->no_telp ?? '-' }}</p>
                     </div>
 
-                    @if($cucian->jenis_ambil == 'diantar')
                     <div class="mb-3">
-                        <p class="mb-2"><strong>Alamat Pengambilan:</strong></p>
-                        <p class="text-muted">{{ $cucian->alamat_ambil }}</p>
+                        <p class="mb-2"><strong>No. WhatsApp:</strong></p>
+                        <p class="text-muted">{{ $cucian->pelanggan->no_wa ?? '-' }}</p>
+                    </div>
+
+                    @if($cucian->pelanggan->alamat)
+                    <div class="mb-3">
+                        <p class="mb-2"><strong>Alamat:</strong></p>
+                        <p class="text-muted">{{ $cucian->pelanggan->alamat }}</p>
                     </div>
                     @endif
                 </div>
@@ -152,14 +220,16 @@
                         <span>Total Item:</span>
                         <strong>{{ $cucian->total_item }} pcs</strong>
                     </div>
+                    @if($cucian->total_berat)
                     <div class="d-flex justify-content-between mb-2">
                         <span>Total Berat:</span>
                         <strong>{{ $cucian->total_berat }} kg</strong>
                     </div>
+                    @endif
                     <hr>
                     <div class="d-flex justify-content-between">
                         <span><strong>Total Harga:</strong></span>
-                        <strong class="text-primary">Rp {{ number_format($cucian->total_harga, 0, ',', '.') }}</strong>
+                        <strong class="text-primary">{{ $cucian->getFormattedTotalHarga() }}</strong>
                     </div>
                 </div>
             </div>

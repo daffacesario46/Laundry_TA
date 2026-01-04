@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
-@section('content')
 
+@section('content')
 <section class="content-main">
     <div class="content-header">
         <div>
@@ -8,12 +8,13 @@
             <p>Kelola data kurir laundry</p>
         </div>
         <div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahKurir">
+            <a href="{{ route('admin.kurir.create') }}" class="btn btn-primary">
                 <i class="material-icons md-add"></i> Tambah Kurir
-            </button>
+            </a>
         </div>
     </div>
 
+    <!-- Filter & Search -->
     <div class="card mb-4">
         <header class="card-header">
             <form action="{{ route('admin.kurir.index') }}" method="GET">
@@ -23,28 +24,28 @@
                                name="search" 
                                placeholder="Cari nama atau email..." 
                                class="form-control" 
-                               value="{{ request()->query('search') }}" />
+                               value="{{ request('search') }}" />
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
                         <select class="form-select" name="status">
                             <option value="">Semua Status</option>
-                            <option {{ request()->query('status') == 'aktif' ? 'selected' : '' }} value="aktif">Aktif</option>
-                            <option {{ request()->query('status') == 'nonaktif' ? 'selected' : '' }} value="nonaktif">Non-Aktif</option>
+                            <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                            <option value="nonaktif" {{ request('status') == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
                         <select class="form-select" name="paginate">
-                            <option {{ request()->query('paginate') == 15 ? 'selected' : '' }} value="15">Show 15</option>
-                            <option {{ request()->query('paginate') == 30 ? 'selected' : '' }} value="30">Show 30</option>
-                            <option {{ request()->query('paginate') == 50 ? 'selected' : '' }} value="50">Show 50</option>
+                            <option value="15" {{ request('paginate') == 15 ? 'selected' : '' }}>Show 15</option>
+                            <option value="30" {{ request('paginate') == 30 ? 'selected' : '' }}>Show 30</option>
+                            <option value="50" {{ request('paginate') == 50 ? 'selected' : '' }}>Show 50</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
                         <button type="submit" class="btn btn-primary w-100">
-                            <i class="material-icons md-search"></i> Cari
+                            <i class="material-icons md-search"></i> Filter
                         </button>
                     </div>
-                    @if(request()->anyFilled(['search', 'status', 'paginate']))
+                    @if(request()->hasAny(['search', 'status']))
                         <div class="col-lg-2 col-md-3 mb-3">
                             <a href="{{ route('admin.kurir.index') }}" class="btn btn-light w-100">
                                 <i class="material-icons md-refresh"></i> Reset
@@ -55,13 +56,14 @@
             </form>
         </header>
 
+        <!-- Table -->
         <div class="card-body">
             @if($kurir->isEmpty())
                 <div class="alert alert-info text-center">
                     <i class="material-icons md-info"></i>
-                    Tidak ada data kurir yang ditemukan
-                    @if(request()->filled('search'))
-                        untuk pencarian "<strong>{{ request()->search }}</strong>"
+                    Tidak ada data kurir
+                    @if(request('search'))
+                        untuk pencarian "<strong>{{ request('search') }}</strong>"
                     @endif
                 </div>
             @else
@@ -69,14 +71,13 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>No</th>
+                                <th>#</th>
                                 <th>Foto</th>
                                 <th>Nama</th>
                                 <th>Email</th>
                                 <th>No. Telepon</th>
                                 <th>Status</th>
-                                <th>Terdaftar</th>
-                                <th>Action</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -85,45 +86,54 @@
                                 <td>{{ $kurir->firstItem() + $index }}</td>
                                 <td>
                                     @if($item->foto)
-                                        <img src="{{ Storage::url($item->foto) }}" class="img-xs rounded-circle" alt="User" />
+                                        <img src="{{ Storage::url($item->foto) }}" 
+                                             class="img-sm rounded-circle" 
+                                             alt="{{ $item->nama }}" />
                                     @else
-                                        <div class="avatar-placeholder">
-                                            <i class="material-icons md-person"></i>
+                                        <div class="icon-shape icon-sm rounded-circle bg-light">
+                                            <i class="material-icons md-person text-muted"></i>
                                         </div>
                                     @endif
                                 </td>
-                                <td><strong>{{ $item->nama }}</strong></td>
+                                <td>
+                                    <strong>{{ $item->nama }}</strong><br>
+                                    <small class="text-muted">{{ $item->no_wa ?? '-' }}</small>
+                                </td>
                                 <td>{{ $item->email }}</td>
                                 <td>{{ $item->no_telp ?? '-' }}</td>
                                 <td>
-                                    <span class="badge {{ $item->status == 'aktif' ? 'bg-success' : 'bg-danger' }}">
+                                    <span class="badge rounded-pill {{ $item->status == 'aktif' ? 'alert-success' : 'alert-danger' }}">
                                         {{ ucfirst($item->status) }}
                                     </span>
                                 </td>
-                                <td>{{ $item->created_at->format('d M Y') }}</td>
-                                <td>
+                                <td class="text-center">
                                     <div class="dropdown">
-                                        <a href="#" data-bs-toggle="dropdown" class="btn btn-sm btn-light">
+                                        <a href="#" data-bs-toggle="dropdown" class="btn btn-light btn-sm">
                                             <i class="material-icons md-more_horiz"></i>
                                         </a>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#" 
-                                               data-bs-toggle="modal" 
-                                               data-bs-target="#modalEditKurir{{ $item->users_id }}">
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <a class="dropdown-item" href="{{ route('admin.kurir.edit', $item->users_id) }}">
                                                 <i class="material-icons md-edit"></i> Edit
                                             </a>
-                                            <a class="dropdown-item" href="#" 
-                                               onclick="toggleStatus({{ $item->users_id }}, '{{ $item->status }}')">
-                                                <i class="material-icons md-{{ $item->status == 'aktif' ? 'block' : 'check_circle' }}"></i> 
-                                                {{ $item->status == 'aktif' ? 'Non-aktifkan' : 'Aktifkan' }}
-                                            </a>
+                                            <form action="{{ route('admin.kurir.toggle-status', $item->users_id) }}" 
+                                                  method="POST" 
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Yakin ingin mengubah status kurir ini?')">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="material-icons md-{{ $item->status == 'aktif' ? 'block' : 'check_circle' }}"></i>
+                                                    {{ $item->status == 'aktif' ? 'Non-aktifkan' : 'Aktifkan' }}
+                                                </button>
+                                            </form>
+                                            <hr class="dropdown-divider">
                                             <form action="{{ route('admin.kurir.destroy', $item->users_id) }}" 
                                                   method="POST" 
-                                                  onsubmit="return confirm('Yakin ingin menghapus kurir ini?')">
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Yakin ingin menghapus kurir ini? Data tidak dapat dikembalikan!')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="dropdown-item text-danger">
-                                                    <i class="material-icons md-delete"></i> Hapus
+                                                    <i class="material-icons md-delete_forever"></i> Hapus
                                                 </button>
                                             </form>
                                         </div>
@@ -138,70 +148,11 @@
         </div>
     </div>
 
+    <!-- Pagination -->
     @if($kurir->hasPages())
-        <div class="pagination-area mt-15 mb-50">
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-start">
-                    {{ $kurir->links() }}
-                </ul>
-            </nav>
+        <div class="pagination-area mt-30 mb-50">
+            {{ $kurir->appends(request()->query())->links() }}
         </div>
     @endif
 </section>
-
-<!-- Modal Tambah Kurir -->
-<div class="modal fade" id="modalTambahKurir" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Tambah Kurir Baru</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ route('admin.kurir.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
-                            <input type="text" name="nama" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Konfirmasi Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password_confirmation" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">No. Telepon</label>
-                            <input type="text" name="no_telp" class="form-control">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">No. WhatsApp</label>
-                            <input type="text" name="no_wa" class="form-control">
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Alamat</label>
-                            <textarea name="alamat" class="form-control" rows="3"></textarea>
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Foto Profile</label>
-                            <input type="file" name="foto" class="form-control" accept="image/*">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 @endsection

@@ -46,43 +46,33 @@ class Pengantaran extends Model
         return $this->status === 'menunggu';
     }
 
-    public function isDiproses()
-    {
-        return $this->status === 'diproses';
-    }
-
-    public function isSelesai()
-    {
-        return $this->status === 'selesai';
-    }
-
-    public function getStatusBadge()
-    {
-        $badges = [
-            'menunggu' => 'alert-warning',
-            'diproses' => 'alert-info',
-            'selesai' => 'alert-success'
-        ];
-        return $badges[$this->status] ?? 'alert-secondary';
-    }
-
-    public function getStatusLabel()
-    {
-        $labels = [
-            'menunggu' => 'Menunggu',
-            'diproses' => 'Dalam Pengiriman',
-            'selesai' => 'Terkirim'
-        ];
-        return $labels[$this->status] ?? 'Unknown';
-    }
-
     public function hasKurir()
     {
-        return !is_null($this->kurir_id);
+        return !is_null($this->kurir_id) && $this->kurir;
     }
 
     public function getKurirNama()
     {
-        return $this->hasKurir() ? $this->kurir->nama : 'Belum Ditugaskan';
+        return $this->kurir ? $this->kurir->nama : '-';
+    }
+
+    public function getStatusLabel()
+    {
+        return match($this->status) {
+            'menunggu' => 'Menunggu',
+            'diproses' => 'Sedang Diantar',
+            'selesai' => 'Selesai',
+            default => $this->status
+        };
+    }
+
+    public function getStatusBadge()
+    {
+        return match($this->status) {
+            'menunggu' => 'bg-warning',
+            'diproses' => 'bg-info',
+            'selesai' => 'bg-success',
+            default => 'bg-secondary'
+        };
     }
 }

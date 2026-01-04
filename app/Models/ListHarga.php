@@ -35,7 +35,31 @@ class ListHarga extends Model
     // Helpers
     public function hasHargaKiloan()
     {
-        return !is_null($this->harga_kiloan);
+        return !is_null($this->harga_kiloan) && $this->harga_kiloan > 0;
+    }
+
+    public function hasHargaSatuan()
+    {
+        return !is_null($this->harga_satuan) && $this->harga_satuan > 0;
+    }
+
+    // TAMBAHAN BARU: Accessor untuk tipe_harga
+    public function getTipeHargaAttribute()
+    {
+        // Jika kedua harga ada, prioritas satuan
+        if ($this->hasHargaSatuan() && $this->hasHargaKiloan()) {
+            return 'satuan'; // bisa juga 'keduanya'
+        }
+        
+        if ($this->hasHargaSatuan()) {
+            return 'satuan';
+        }
+        
+        if ($this->hasHargaKiloan()) {
+            return 'kiloan';
+        }
+        
+        return 'satuan'; // default
     }
 
     public function getFormattedHargaSatuan()

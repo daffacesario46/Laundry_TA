@@ -62,17 +62,6 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select @error('status') is-invalid @enderror" name="status" required>
-                                <option value="aktif" {{ old('status', $layanan->status) == 'aktif' ? 'selected' : '' }}>Aktif</option>
-                                <option value="nonaktif" {{ old('status', $layanan->status) == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
                             <label class="form-label">Deskripsi</label>
                             <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
                                       name="deskripsi" 
@@ -101,6 +90,9 @@
                 <div class="card-body">
                     <h5 class="card-title">Informasi Data</h5>
                     <p class="text-muted small mb-2">
+                        <strong>ID:</strong> {{ $layanan->layanan_id }}
+                    </p>
+                    <p class="text-muted small mb-2">
                         <strong>Dibuat:</strong><br>
                         {{ \Carbon\Carbon::parse($layanan->created_at)->format('d M Y H:i') }}
                     </p>
@@ -108,11 +100,32 @@
                         <strong>Terakhir Diupdate:</strong><br>
                         {{ \Carbon\Carbon::parse($layanan->updated_at)->format('d M Y H:i') }}
                     </p>
-                    <hr>
-                    <p class="text-muted small mb-2"><strong>Tips Update:</strong></p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Status Penggunaan</h5>
+                    @if($layanan->cucian()->count() > 0)
+                        <div class="alert alert-warning">
+                            <i class="material-icons md-warning"></i>
+                            Layanan ini sedang digunakan dalam <strong>{{ $layanan->cucian()->count() }}</strong> transaksi cucian
+                        </div>
+                    @else
+                        <div class="alert alert-success">
+                            <i class="material-icons md-check_circle"></i>
+                            Layanan ini belum pernah digunakan
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Tips Update</h5>
                     <ul class="text-muted small">
                         <li>Pastikan durasi pengerjaan realistis</li>
-                        <li>Status "Non-Aktif" untuk layanan yang tidak tersedia</li>
+                        <li>Jenis cucian menentukan cara perhitungan harga</li>
                         <li>Perbarui deskripsi jika ada perubahan detail layanan</li>
                     </ul>
                 </div>

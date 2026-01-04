@@ -73,7 +73,7 @@
                                 <th>Nama Layanan</th>
                                 <th>Jenis Cucian</th>
                                 <th>Durasi</th>
-                                <th>Status</th>
+                                <th>Deskripsi</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -83,13 +83,17 @@
                                 <td>{{ $layanan->firstItem() + $index }}</td>
                                 <td><strong>{{ $item->nama_layanan }}</strong></td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ ucfirst($item->jenis_cucian) }}</span>
+                                    <span class="badge {{ $item->isKiloan() ? 'bg-info' : 'bg-success' }}">
+                                        {{ ucfirst($item->jenis_cucian) }}
+                                    </span>
                                 </td>
                                 <td>{{ $item->durasi_hari }} hari</td>
                                 <td>
-                                    <span class="badge {{ $item->status == 'aktif' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
-                                    </span>
+                                    @if($item->deskripsi)
+                                        {{ Str::limit($item->deskripsi, 50) }}
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="dropdown">
