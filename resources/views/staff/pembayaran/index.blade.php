@@ -24,6 +24,13 @@
         </div>
     @endif
 
+    @if(session('info'))
+        <div class="alert alert-info alert-dismissible fade show">
+            {{ session('info') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="card mb-4">
         <header class="card-header">
             <div class="row gx-3">
@@ -44,6 +51,7 @@
                         <option value="all" {{ request('metode') == 'all' ? 'selected' : '' }}>Semua Metode</option>
                         <option value="cash" {{ request('metode') == 'cash' ? 'selected' : '' }}>Cash</option>
                         <option value="transfer" {{ request('metode') == 'transfer' ? 'selected' : '' }}>Transfer</option>
+                        <option value="midtrans" {{ request('metode') == 'midtrans' ? 'selected' : '' }}>Midtrans</option>
                     </select>
                 </div>
 
@@ -109,7 +117,7 @@
                             </td>
                             <td><strong>{{ $item->getFormattedJumlahBayar() }}</strong></td>
                             <td>
-                                <span class="badge rounded-pill {{ $item->metode_bayar == 'cash' ? 'alert-success' : 'alert-info' }}">
+                                <span class="badge rounded-pill {{ $item->metode_bayar == 'cash' ? 'alert-success' : ($item->metode_bayar == 'midtrans' ? 'alert-primary' : 'alert-info') }}">
                                     {{ $item->getMetodeBayarLabel() }}
                                 </span>
                             </td>
@@ -130,6 +138,14 @@
                                    class="btn btn-sm btn-light" title="Detail">
                                     <i class="icon material-icons md-visibility"></i>
                                 </a>
+
+                                @if($item->status_bayar === 'belum')
+                                    <a href="{{ route('staff.pembayaran.midtrans', $item->pembayaran_id) }}" 
+                                       class="btn btn-sm btn-success" 
+                                       title="Bayar via Midtrans">
+                                        <i class="icon material-icons md-payment"></i>
+                                    </a>
+                                @endif
                                 
                                 @if($item->metode_bayar == 'transfer' && $item->status_bayar == 'belum' && $item->bukti_bayar)
                                     <a href="{{ route('staff.pembayaran.validate-form', $item->pembayaran_id) }}" 

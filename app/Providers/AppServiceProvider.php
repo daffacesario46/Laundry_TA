@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,6 +13,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+        if (env(key: 'APP_ENV') !=='local') {
+            URL::forceScheme(scheme:'https');
+          }
     }
 
     /**
@@ -20,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+        if (env(key: 'APP_ENV') === 'local' && request()->server(key: 'HTTP_X_FORWARDED_PROTO') === 'https') {
+            URL::forceScheme(scheme: 'https');
+        }
     }
 }

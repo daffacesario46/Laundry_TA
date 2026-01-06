@@ -7,9 +7,15 @@ use App\Models\Cucian;
 use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Snap;
+use Midtrans\Config;
+use Midtrans\Notification;
+use App\Services\Midtrans\CreateSnapTokenService;
+use App\Services\Midtrans\CallbackService;
 
 class PembayaranController extends Controller
 {
+
     /**
      * Display a listing of pembayaran
      */
@@ -122,6 +128,168 @@ class PembayaranController extends Controller
             return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()])
                 ->withInput();
         }
+    }
+
+    /**
+     * Create Midtrans payment
+     */
+    public function createMidtransPayment($cucian_id)
+    {
+        DB::beginTransaction();
+        try {
+            $cucian = Cucian::with(['pelanggan'])->findOrFail($cucian_id);
+            
+            // Check if payment already exists
+            if ($cucian->hasPembayaran()) {
+                $pembayaran = $cucian->pembayaran;
+                
+                // Generate snap token if not exists
+                if (empty($pembayaran->snap_token)) {
+                    $midtrans = new CreateSnapTokenService($pembayaran);
+                    $snapToken = $midtrans->getSnapToken();
+                    
+                    $pembayaran->update([
+                        'snap_token' => $snapToken,
+                        'metode_bayar' => 'midtrans'
+                    ]);
+                }
+            } else {
+                // Create new payment
+                $pembayaran = Pembayaran::create([
+                    'cucian_id' => $cucian_id,
+                    'metode_bayar' => 'midtrans',
+                    'status_bayar' => 'belum',
+                    'jumlah_bayar' => $cucian->total_harga,
+                ]);
+                
+                // Generate snap token
+                $midtrans = new CreateSnapTokenService($pembayaran);
+                $snapToken = $midtrans->getSnapToken();
+                
+                $pembayaran->update([
+                    'snap_token' => $snapToken
+                ]);
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('staff.pembayaran.midtrans', $pembayaran->pembayaran_id);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Handle Midtrans notification callback
+     */
+    public function handleMidtransCallback(Request $request)
+    {
+        try {
+            // Log incoming request untuk debugging
+            \Log::info('Midtrans Callback', [
+                'body' => $request->all()
+            ]);
+
+            $callback = new CallbackService;
+
+            if ($callback->isSignatureKeyVerified()) {
+                $notification = $callback->getNotification();
+                $pembayaran = $callback->getPembayaran();
+                
+                // PERBAIKAN: Check jika pembayaran null
+                if (!$pembayaran) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pembayaran not found'
+                    ], 404);
+                }
+
+                if ($callback->isSuccess()) {
+                    $pembayaran->update([
+                        'status_bayar' => 'lunas',
+                        'tgl_bayar' => now(),
+                        'catatan' => 'Pembayaran sukses melalui Midtrans'
+                    ]);
+                    
+                    \Log::info('Payment Success', ['pembayaran_id' => $pembayaran->pembayaran_id]);
+                }
+
+                if ($callback->isExpire()) {
+                    $pembayaran->update([
+                        'status_bayar' => 'expired',
+                        'catatan' => 'Pembayaran expired'
+                    ]);
+                    
+                    \Log::info('Payment Expired', ['pembayaran_id' => $pembayaran->pembayaran_id]);
+                }
+
+                if ($callback->isCancelled()) {
+                    $pembayaran->update([
+                        'status_bayar' => 'batal',
+                        'catatan' => 'Pembayaran dibatalkan'
+                    ]);
+                    
+                    \Log::info('Payment Cancelled', ['pembayaran_id' => $pembayaran->pembayaran_id]);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notifikasi berhasil diproses'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Signature key tidak valid'
+            ], 403);
+
+        } catch (\Exception $e) {
+            \Log::error('Midtrans Callback Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show Midtrans payment page
+     */
+    public function showMidtransPayment($id)
+    {
+        $pembayaran = Pembayaran::with(['cucian.pelanggan', 'cucian.layanan'])->findOrFail($id);
+        $cucian = $pembayaran->cucian;
+        
+        // Check if already paid
+        if ($pembayaran->status_bayar === 'lunas') {
+            return redirect()->route('staff.pembayaran.index')
+                ->with('info', 'Pembayaran sudah lunas!');
+        }
+        
+        // PERBAIKAN: Generate snap token jika belum ada
+        if (empty($pembayaran->snap_token)) {
+            try {
+                $midtrans = new CreateSnapTokenService($pembayaran);
+                $snapToken = $midtrans->getSnapToken();
+                
+                $pembayaran->update([
+                    'snap_token' => $snapToken
+                ]);
+                
+                // Refresh model
+                $pembayaran->refresh();
+            } catch (\Exception $e) {
+                return back()->withErrors(['error' => 'Gagal membuat snap token: ' . $e->getMessage()]);
+            }
+        }
+        
+        return view('staff.pembayaran.midtrans-payment', compact('cucian', 'pembayaran'));
     }
 
     /**

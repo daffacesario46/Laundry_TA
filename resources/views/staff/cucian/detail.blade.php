@@ -431,9 +431,16 @@
                                     <i class="material-icons md-payment"></i>
                                     <strong>Langkah 1:</strong> Proses pembayaran terlebih dahulu
                                 </div>
-                                <a href="{{ route('staff.pembayaran.form', $cucian->cucian_id) }}" class="btn btn-warning btn-lg">
-                                    <i class="material-icons md-payment"></i> Proses Pembayaran
-                                </a>
+                                <div class="btn-group w-100 mb-2" role="group">
+                                    <a href="{{ route('staff.pembayaran.form', $cucian->cucian_id) }}" 
+                                    class="btn btn-warning btn-lg">
+                                        <i class="material-icons md-payments"></i> Cash/Transfer
+                                    </a>
+                                    <a href="{{ route('staff.pembayaran.midtrans', $cucian->pembayaran->pembayaran_id ?? $cucian->cucian_id) }}" 
+                                    class="btn btn-success btn-lg">
+                                        <i class="material-icons md-credit_card"></i> Midtrans
+                                    </a>
+                                </div>
                             
                             @elseif($cucian->status_cucian === 'menunggu')
                                 <div class="alert alert-success mb-3">

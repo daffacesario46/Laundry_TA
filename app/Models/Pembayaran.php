@@ -20,7 +20,11 @@ class Pembayaran extends Model
         'jumlah_bayar',
         'tgl_bayar',
         'bukti_bayar',
-        'catatan'
+        'catatan',
+        'snap_token',
+        'transaction_id',
+        'payment_type',
+        'transaction_status',
     ];
 
     protected $casts = [

@@ -337,4 +337,11 @@ Route::prefix('pelanggan')->name('pelanggan.')->middleware(['auth', 'role:pelang
     })->name('home');
 }); // TUTUP PELANGGAN ROUTES
     
-   
+// Midtrans Payment Routes
+Route::post('/pembayaran/midtrans/create/{cucian_id}', [PembayaranController::class, 'createMidtransPayment'])
+    ->name('staff.pembayaran.midtrans.create');
+
+Route::get('/pembayaran/midtrans/{id}', [PembayaranController::class, 'showMidtransPayment'])
+    ->name('staff.pembayaran.midtrans');
+
+// Route::post('/payments/midtrans-notification', [PembayaranController::class, 'handleMidtransCallback']);
