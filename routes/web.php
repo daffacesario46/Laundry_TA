@@ -313,6 +313,8 @@ Route::prefix('pelanggan')->name('pelanggan.')->middleware(['auth', 'role:pelang
         Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
         Route::get('/{id}/detail', [OrderController::class, 'detail'])->name('detail');
+        Route::get('/{id}/pay-midtrans', [OrderController::class, 'createMidtransPayment'])
+            ->name('pay-midtrans');
         
         // PAYMENT ROUTES
         Route::get('/{id}/upload-bukti', [OrderController::class, 'showUploadBukti'])->name('show-upload-bukti');

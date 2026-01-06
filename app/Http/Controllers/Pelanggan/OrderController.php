@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Services\Midtrans\Midtrans;
+
 
 class OrderController extends Controller
 {
@@ -409,6 +411,119 @@ class OrderController extends Controller
             \Log::error('Cancel Order Error: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Gagal membatalkan order: ' . $e->getMessage());
+        }
+    }
+    public function createMidtransPayment($id)
+    {
+        $pelanggan = $this->getPelanggan();
+        if (!$pelanggan) {
+            return redirect()->route('pelanggan.dashboard')
+                ->with('error', 'Data pelanggan tidak ditemukan!');
+        }
+
+        $order = Cucian::with(['detail.listHarga', 'pembayaran', 'layanan'])
+            ->where('cucian_id', $id)
+            ->where('pelanggan_id', $pelanggan->pelanggan_id)
+            ->firstOrFail();
+
+        // Validasi: total harga harus ada
+        if (!$order->total_harga || $order->total_harga <= 0) {
+            return redirect()->back()
+                ->with('error', 'Total harga belum tersedia. Untuk kiloan, tunggu staff input berat terlebih dahulu.');
+        }
+
+        // Validasi: pembayaran belum lunas
+        if ($order->pembayaran && $order->pembayaran->status_bayar === 'lunas') {
+            return redirect()->back()
+                ->with('info', 'Pembayaran sudah lunas!');
+        }
+
+        DB::beginTransaction();
+        try {
+            $midtrans = new Midtrans();
+            $snapToken = $midtrans->createSnapToken($order, $pelanggan);
+
+            // Update pembayaran dengan snap token
+            $order->pembayaran->update([
+                'snap_token' => $snapToken,
+            ]);
+
+            DB::commit();
+
+            return view('pelanggan.order.payment', compact('order', 'snapToken'));
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Midtrans Error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal membuat pembayaran: ' . $e->getMessage());
+        }
+    }
+
+/**
+ * Handle Midtrans callback/notification
+ */
+public function handleMidtransCallback(Request $request)
+    {
+        $midtrans = new Midtrans();
+        
+        try {
+            $notif = new \Midtrans\Notification();
+            
+            $transaction = $notif->transaction_status;
+            $type = $notif->payment_type;
+            $orderId = $notif->order_id;
+            $fraud = $notif->fraud_status;
+
+            // Extract cucian_id from order_id
+            preg_match('/ORDER-(\d+)-/', $orderId, $matches);
+            $cucianId = $matches[1] ?? null;
+
+            if (!$cucianId) {
+                \Log::error('Invalid order_id format: ' . $orderId);
+                return response()->json(['status' => 'error', 'message' => 'Invalid order ID']);
+            }
+
+            $pembayaran = Pembayaran::whereHas('cucian', function($q) use ($cucianId) {
+                $q->where('cucian_id', $cucianId);
+            })->first();
+
+            if (!$pembayaran) {
+                \Log::error('Payment not found for cucian_id: ' . $cucianId);
+                return response()->json(['status' => 'error', 'message' => 'Payment not found']);
+            }
+
+            // Update payment data
+            $pembayaran->transaction_id = $notif->transaction_id;
+            $pembayaran->payment_type = $type;
+
+            if ($transaction == 'capture') {
+                if ($type == 'credit_card') {
+                    if ($fraud == 'challenge') {
+                        $pembayaran->status_bayar = 'pending';
+                    } else {
+                        $pembayaran->status_bayar = 'lunas';
+                        $pembayaran->tgl_bayar = now();
+                    }
+                }
+            } elseif ($transaction == 'settlement') {
+                $pembayaran->status_bayar = 'lunas';
+                $pembayaran->tgl_bayar = now();
+            } elseif ($transaction == 'pending') {
+                $pembayaran->status_bayar = 'pending';
+            } elseif ($transaction == 'deny') {
+                $pembayaran->status_bayar = 'gagal';
+            } elseif ($transaction == 'expire') {
+                $pembayaran->status_bayar = 'expired';
+            } elseif ($transaction == 'cancel') {
+                $pembayaran->status_bayar = 'dibatalkan';
+            }
+
+            $pembayaran->save();
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            \Log::error('Midtrans Callback Error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
 }

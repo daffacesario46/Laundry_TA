@@ -160,6 +160,12 @@
                     {{-- Action Buttons for Payment --}}
                     <div class="d-flex gap-2">
                         @if($pembayaran->status_bayar === 'belum' && $pembayaran->metode_bayar === 'transfer')
+                            @if($order->pembayaran && $order->pembayaran->status_bayar !== 'lunas')
+                                <a href="{{ route('pelanggan.order.pay-midtrans', $order->cucian_id) }}" 
+                                class="btn btn-success">
+                                    <i class="fas fa-credit-card"></i> Bayar dengan Midtrans
+                                </a>
+                            @endif
                             @if($pembayaran->bukti_bayar)
                                 {{-- Already uploaded, show status --}}
                                 <div class="alert alert-warning w-100 mb-0">

@@ -14,5 +14,6 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         '/payments/midtrans-notification',  // Tambahkan ini
         '/api/payments/midtrans-notification',
+        '/api/midtrans/notification',
     ];
 }
