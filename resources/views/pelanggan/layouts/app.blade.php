@@ -8,6 +8,8 @@
     <link rel="icon" href="{{ asset('admins/imgs/theme/washwes.png') }}" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="{{ asset('admins/css/main.css?v=1.1') }}" rel="stylesheet" type="text/css" />
+    @laravelPWA
+    <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
@@ -27,6 +29,15 @@
     <script src="{{ asset('admins/js/vendors/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('admins/js/main.js?v=1.1') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="{{ asset('/sw.js') }}"></script>
+    <script>
+    if (!navigator.serviceWorker.controller) {
+        navigator.serviceWorker.register("/sw.js").then(function (reg) {
+        console.log("Service worker registered: " + reg.scope);
+        });
+    }
+    </script>
 
     @if (session('success'))
         <script>

@@ -12,6 +12,9 @@
 	 <meta property="og:url" content="" />
 	 <meta property="og:image" content="" />
 
+    @laravelPWA
+    <link rel="manifest" href="/manifest.json">
+
     <!-- Favicon -->
     <link href="{{ asset('home') }}/img/washwes.png" rel="icon">
 
@@ -428,5 +431,12 @@
 					});
 				}
 			</script>
+            <script>
+            if (!navigator.serviceWorker.controller) {
+                navigator.serviceWorker.register("/sw.js").then(function (reg) {
+                console.log("Service worker registered: " + reg.scope);
+                });
+            }
+            </script>
 		</body>
 </html>

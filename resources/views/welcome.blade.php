@@ -12,6 +12,9 @@
 	 <meta property="og:url" content="" />
 	 <meta property="og:image" content="" />
 
+    @laravelPWA
+    <link rel="manifest" href="/manifest.json">
+
     <!-- Favicon -->
     <link href="{{ asset('home') }}/img/washwes.png" rel="icon">
 
@@ -79,8 +82,8 @@
 								<div class="dropdown navbar-nav">
 									<a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false"> <img class="img-xs rounded-circle" style="width: 50px; height: 50px" src="{{ auth()->user()->img ?? asset('admins/imgs/people/avatar-2.png')}}" alt="User" /></a>
 									<div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
-										<a class="dropdown-item" href="{{ route('user.profile') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
-										<a class="dropdown-item" href="{{ route('user.index') }}"><i class="material-icons md-receipt"></i>Order</a>
+										<a class="dropdown-item" href="{{ route('pelanggan.profile.index') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
+										<a class="dropdown-item" href="{{ route('pelanggan.order.index') }}"><i class="material-icons md-receipt"></i>Order</a>
 										<div class="dropdown-divider"></div>
 										<form onsubmit="submitLogout(this, event)" action="{{ route('logout') }}" method="POST">
 											@method('DELETE')
@@ -428,5 +431,12 @@
 					});
 				}
 			</script>
+            <script>
+            if (!navigator.serviceWorker.controller) {
+                navigator.serviceWorker.register("/sw.js").then(function (reg) {
+                console.log("Service worker registered: " + reg.scope);
+                });
+            }
+            </script>
 		</body>
 </html>
