@@ -206,4 +206,21 @@ class PembayaranController extends Controller
             return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
+
+    /**
+ * Show Midtrans payment page
+ */
+    public function showMidtransPayment($id)
+    {
+        $pembayaran = Pembayaran::with(['cucian.pelanggan', 'cucian.layanan'])->findOrFail($id);
+        $cucian = $pembayaran->cucian;
+        
+        // Check if already paid
+        if ($pembayaran->status_bayar === 'lunas') {
+            return redirect()->route('staff.pembayaran.index')
+                ->with('info', 'Pembayaran sudah lunas!');
+        }
+        
+        return view('staff.pembayaran.midtrans-payment', compact('cucian', 'pembayaran'));
+    }
 }

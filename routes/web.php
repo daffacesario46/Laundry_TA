@@ -22,17 +22,18 @@ use App\Http\Controllers\Staff\PenjemputanController;
 use App\Http\Controllers\Staff\PengantaranController;
 use App\Http\Controllers\Staff\StaffProfileController;
 
-
 // Import Controllers Pelanggan
 use App\Http\Controllers\Pelanggan\PelangganDashboardController;
 use App\Http\Controllers\Pelanggan\OrderController;
 use App\Http\Controllers\Pelanggan\ProfileController;
 
-
 // Import Controllers Kurir
 use App\Http\Controllers\Kurir\KurirDashboardController;
 use App\Http\Controllers\Kurir\KurirPenjemputanController;
 use App\Http\Controllers\Kurir\KurirPengantaranController;
+
+// Import Midtrans Controller
+use App\Http\Controllers\MidtransController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,13 +53,26 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-
 // Tracking Routes  
 Route::get('/tracking', [App\Http\Controllers\TrackingController::class, 'index'])->name('tracking.index');
 Route::post('/tracking', [App\Http\Controllers\TrackingController::class, 'track'])->name('tracking.track');
 Route::get('/tracking/api/{id}', [App\Http\Controllers\TrackingController::class, 'api'])->name('tracking.api');
 
+/*
+|--------------------------------------------------------------------------
+| MIDTRANS ROUTES (Public - untuk callback dari Midtrans)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('midtrans')->name('midtrans.')->group(function () {
+    Route::post('/callback', [MidtransController::class, 'callback'])->name('callback');
+    Route::get('/finish', [MidtransController::class, 'finish'])->name('finish');
+});
 
+// API untuk create snap token (protected by auth)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/payment/create-snap/{cucianId}', [MidtransController::class, 'createSnapToken'])->name('payment.create-snap');
+    Route::post('/payment/update-status', [MidtransController::class, 'updateStatusFromFrontend'])->name('payment.update-status');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -152,12 +166,12 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
     
     // PROFILE STAFF
     Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Staff\ProfileController::class, 'index'])->name('index');
-        Route::get('/edit', [App\Http\Controllers\Staff\ProfileController::class, 'edit'])->name('edit');
-        Route::put('/update', [App\Http\Controllers\Staff\ProfileController::class, 'update'])->name('update');
-        Route::get('/change-password', [App\Http\Controllers\Staff\ProfileController::class, 'changePassword'])->name('change-password');
-        Route::put('/update-password', [App\Http\Controllers\Staff\ProfileController::class, 'updatePassword'])->name('update-password');
-        Route::delete('/delete-photo', [App\Http\Controllers\Staff\ProfileController::class, 'deletePhoto'])->name('delete-photo');
+        Route::get('/', [StaffProfileController::class, 'index'])->name('index');
+        Route::get('/edit', [StaffProfileController::class, 'edit'])->name('edit');
+        Route::put('/update', [StaffProfileController::class, 'update'])->name('update');
+        Route::get('/change-password', [StaffProfileController::class, 'changePassword'])->name('change-password');
+        Route::put('/update-password', [StaffProfileController::class, 'updatePassword'])->name('update-password');
+        Route::delete('/delete-photo', [StaffProfileController::class, 'deletePhoto'])->name('delete-photo');
     });
     
     // CRUD Cucian
@@ -200,6 +214,9 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::get('/cucian/{cucian_id}/bayar', [PembayaranController::class, 'showPaymentForm'])->name('form');
         Route::post('/cucian/{cucian_id}/proses', [PembayaranController::class, 'processPayment'])->name('process');
         
+        // Midtrans Payment (NEW)
+        Route::get('/{id}/midtrans', [PembayaranController::class, 'showMidtransPayment'])->name('midtrans');
+        
         // Validate transfer payment for online customer
         Route::get('/{id}/validate', [PembayaranController::class, 'showValidateForm'])->name('validate-form');
         Route::put('/{id}/validate', [PembayaranController::class, 'validatePayment'])->name('validate');
@@ -217,7 +234,7 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::get('/cucian/{cucian_id}/assign', [PenjemputanController::class, 'assignForm'])->name('assign-form');
         Route::post('/cucian/{cucian_id}/assign', [PenjemputanController::class, 'assign'])->name('assign');
         
-        // Edit penjemputan (update existing) - TAMBAHAN BARU
+        // Edit penjemputan (update existing)
         Route::get('/{id}/edit', [PenjemputanController::class, 'edit'])->name('edit');
         
         // Update status
@@ -239,7 +256,7 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::get('/cucian/{cucian_id}/assign', [PengantaranController::class, 'assignForm'])->name('assign-form');
         Route::post('/cucian/{cucian_id}/assign', [PengantaranController::class, 'assign'])->name('assign');
         
-        // Edit pengantaran (update existing) - TAMBAHAN BARU
+        // Edit pengantaran (update existing)
         Route::get('/{id}/edit', [PengantaranController::class, 'edit'])->name('edit');
         
         // Update status
@@ -252,17 +269,7 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::delete('/{id}', [PengantaranController::class, 'destroy'])->name('destroy');
     });
 
-    // PROFILE STAFF
-Route::prefix('profile')->name('profile.')->group(function () {
-    Route::get('/', [StaffProfileController::class, 'index'])->name('index');
-    Route::get('/edit', [StaffProfileController::class, 'edit'])->name('edit');
-    Route::put('/update', [StaffProfileController::class, 'update'])->name('update');
-    Route::get('/change-password', [StaffProfileController::class, 'changePassword'])->name('change-password');
-    Route::put('/update-password', [StaffProfileController::class, 'updatePassword'])->name('update-password');
-    Route::delete('/delete-photo', [StaffProfileController::class, 'deletePhoto'])->name('delete-photo');
-});
 }); // TUTUP STAFF ROUTES
-
 
 /*
 |--------------------------------------------------------------------------
@@ -335,6 +342,5 @@ Route::prefix('pelanggan')->name('pelanggan.')->middleware(['auth', 'role:pelang
     Route::get('/home', function() {
         return view('pelanggan.home');
     })->name('home');
-}); // TUTUP PELANGGAN ROUTES
     
-   
+}); // TUTUP PELANGGAN ROUTES

@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
+        
+        // Exclude CSRF for Midtrans callback
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/callback',
+            'midtrans/finish',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
