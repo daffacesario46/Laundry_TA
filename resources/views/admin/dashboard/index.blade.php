@@ -28,6 +28,17 @@
             </form>
         </div>
     </div>
+    </div>
+        @if($stokMenipis->isNotEmpty())
+        <div class="alert alert-warning mb-4">
+            <h5><i class="material-icons md-warning"></i> Stok Bahan Menipis!</h5>
+            <ul class="mb-0">
+                @foreach($stokMenipis as $stok)
+                <li>{{ $stok->jenis_bahan }} ({{ $stok->merk }}) - Sisa: <strong>{{ $stok->stok_tersedia }} {{ $stok->satuan }}</strong></li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
     
     <div class="card mb-4">
         <header class="card-header">
@@ -124,7 +135,7 @@
                 </div>
             @endif
         </div>
-    </div>
+    
     
     @if($cucian->hasPages())
         <div class="pagination-area mt-15 mb-50">

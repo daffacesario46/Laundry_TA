@@ -59,89 +59,91 @@ class CucianController extends Controller
      * Show form for creating new cucian
      */
     public function create()
-    {
-        $pelanggan = Pelanggan::where('status', 'aktif')
-                              ->orderBy('nama')
-                              ->get();
-        $layanan = Layanan::orderBy('nama_layanan')->get();
-        $listHarga = ListHarga::orderBy('nama_item')->get();
-        
-        return view('staff.cucian.create', compact('pelanggan', 'layanan', 'listHarga'));
-    }
+{
+    // ✅ FIXED: Hilangkan duplikat pelanggan berdasarkan no_telp
+    $pelanggan = Pelanggan::where('status', 'aktif')
+        ->orderBy('nama')
+        ->get()
+        ->unique('no_telp')  // Unique berdasarkan nomor telepon
+        ->values();          // Reset array keys
+    
+    $layanan = Layanan::orderBy('nama_layanan')->get();
+    $listHarga = ListHarga::orderBy('nama_item')->get();
+    
+    return view('staff.cucian.create', compact('pelanggan', 'layanan', 'listHarga'));
+}
 
     /**
      * ✅ UPDATED: Store new cucian - OFFLINE ONLY
      */
     public function store(Request $request)
 {
-    // Staff hanya buat order OFFLINE
     $jenis_order = 'offline';
     
-    // ✅ Validasi jenis_cucian
+    // Validasi
     $request->validate([
         'jenis_cucian' => 'required|in:kiloan,satuan',
+        'metode_cuci' => 'required|in:normal,express', // ✅ TAMBAHAN
     ], [
         'jenis_cucian.required' => 'Jenis cucian wajib dipilih',
+        'metode_cuci.required' => 'Metode cuci wajib dipilih',
     ]);
     
     $jenis_cucian = $request->jenis_cucian;
+    $metode_cuci = $request->metode_cuci;
+    
+    // ✅ Express multiplier
+    $expressMultiplier = $metode_cuci === 'express' ? 1.5 : 1;
     
     // Validation berbeda untuk kiloan vs satuan
     if ($jenis_cucian === 'kiloan') {
-        // KILOAN OFFLINE: wajib ada berat
         $validated = $request->validate([
             'pelanggan_id' => 'required|exists:pelanggan,pelanggan_id',
             'layanan_id' => 'required|exists:layanan,layanan_id',
             'jenis_ambil' => 'required|in:diantar,ambil_sendiri',
-            'metode_bayar' => 'required|in:cash,transfer,e-wallet',
+            'metode_bayar' => 'required|in:cash,transfer',
             'berat_kiloan' => 'required|numeric|min:0.1',
             'catatan' => 'nullable|string'
-        ], [
-            'berat_kiloan.required' => 'Berat cucian wajib diisi untuk layanan kiloan',
-            'berat_kiloan.min' => 'Berat minimal 0.1 Kg',
-            'metode_bayar.required' => 'Metode pembayaran wajib dipilih',
         ]);
     } else {
-        // SATUAN OFFLINE
         $validated = $request->validate([
             'pelanggan_id' => 'required|exists:pelanggan,pelanggan_id',
             'layanan_id' => 'required|exists:layanan,layanan_id',
             'jenis_ambil' => 'required|in:diantar,ambil_sendiri',
-            'metode_bayar' => 'required|in:cash,transfer,e-wallet',
+            'metode_bayar' => 'required|in:cash,transfer',
             'items' => 'required|array|min:1',
             'items.*.list_harga_id' => 'required|exists:list_harga,list_harga_id',
             'items.*.jumlah' => 'required|integer|min:1',
             'catatan' => 'nullable|string'
-        ], [
-            'items.required' => 'Minimal harus ada 1 item cucian',
-            'items.min' => 'Minimal harus ada 1 item cucian',
-            'metode_bayar.required' => 'Metode pembayaran wajib dipilih',
         ]);
     }
-    
+
     DB::beginTransaction();
     try {
         $layanan = Layanan::find($request->layanan_id);
         $estimasi = Carbon::now()->addDays($layanan->durasi_hari ?? 3);
-        
-        // ✅ HANDLE KILOAN OFFLINE
+
+        // HANDLE KILOAN OFFLINE
         if ($jenis_cucian === 'kiloan') {
             $beratKg = $request->berat_kiloan;
-            
             $listHargaKiloan = ListHarga::where('harga_kiloan', '>', 0)->first();
+            
             if (!$listHargaKiloan) {
                 throw new \Exception('Tidak ada harga kiloan yang tersedia');
             }
-            
-            $totalHarga = $beratKg * $listHargaKiloan->harga_kiloan;
-            
+
+            // ✅ Hitung dengan express
+            $subtotal = $beratKg * $listHargaKiloan->harga_kiloan;
+            $totalHarga = $subtotal * $expressMultiplier;
+
             // Buat cucian
             $cucian = Cucian::create([
                 'pelanggan_id' => $request->pelanggan_id,
                 'layanan_id' => $request->layanan_id,
-                'jenis_cucian' => 'kiloan', // ✅ TAMBAHAN
+                'jenis_cucian' => 'kiloan',
                 'jenis_order' => $jenis_order,
                 'jenis_ambil' => $request->jenis_ambil,
+                'metode_cuci' => $metode_cuci, // ✅ TAMBAHAN
                 'tgl_order' => Carbon::now(),
                 'estimasi' => $estimasi,
                 'total_item' => 1,
@@ -150,7 +152,7 @@ class CucianController extends Controller
                 'status_cucian' => 'menunggu',
                 'catatan' => $request->catatan
             ]);
-            
+
             CucianDetail::create([
                 'cucian_id' => $cucian->cucian_id,
                 'list_harga_id' => $listHargaKiloan->list_harga_id,
@@ -158,27 +160,31 @@ class CucianController extends Controller
                 'berat_kg' => $beratKg,
                 'harga_satuan' => null,
                 'harga_kiloan' => $listHargaKiloan->harga_kiloan,
-                'deskripsi' => 'Cucian kiloan'
+                'deskripsi' => 'Cucian kiloan' . ($metode_cuci === 'express' ? ' (Express +50%)' : '')
             ]);
-            
         } else {
-            // ✅ HANDLE SATUAN OFFLINE
-            $totalHarga = 0;
-            $totalItem = count($request->items);
-            
+            // HANDLE SATUAN OFFLINE
+            $subtotal = 0;
+            $totalItem = 0;
+
             foreach ($request->items as $item) {
                 $listHarga = ListHarga::find($item['list_harga_id']);
                 $jumlah = $item['jumlah'] ?? 1;
-                $totalHarga += $jumlah * $listHarga->harga_satuan;
+                $subtotal += $jumlah * $listHarga->harga_satuan;
+                $totalItem += $jumlah;
             }
-            
+
+            // ✅ Hitung dengan express
+            $totalHarga = $subtotal * $expressMultiplier;
+
             // Buat cucian
             $cucian = Cucian::create([
                 'pelanggan_id' => $request->pelanggan_id,
                 'layanan_id' => $request->layanan_id,
-                'jenis_cucian' => 'satuan', // ✅ TAMBAHAN
+                'jenis_cucian' => 'satuan',
                 'jenis_order' => $jenis_order,
                 'jenis_ambil' => $request->jenis_ambil,
+                'metode_cuci' => $metode_cuci, // ✅ TAMBAHAN
                 'tgl_order' => Carbon::now(),
                 'estimasi' => $estimasi,
                 'total_item' => $totalItem,
@@ -187,12 +193,12 @@ class CucianController extends Controller
                 'status_cucian' => 'menunggu',
                 'catatan' => $request->catatan
             ]);
-            
+
             // Buat detail cucian
             foreach ($request->items as $item) {
                 $listHarga = ListHarga::find($item['list_harga_id']);
                 $jumlah = $item['jumlah'] ?? 1;
-                
+
                 CucianDetail::create([
                     'cucian_id' => $cucian->cucian_id,
                     'list_harga_id' => $item['list_harga_id'],
@@ -204,7 +210,7 @@ class CucianController extends Controller
                 ]);
             }
         }
-        
+
         // Buat pembayaran
         Pembayaran::create([
             'cucian_id' => $cucian->cucian_id,
@@ -212,12 +218,12 @@ class CucianController extends Controller
             'status_bayar' => 'belum',
             'jumlah_bayar' => $totalHarga
         ]);
-        
+
         DB::commit();
-        
+
         return redirect()->route('staff.cucian.show', $cucian->cucian_id)
             ->with('success', 'Data cucian berhasil ditambahkan! No Order: ' . $cucian->getNoOrder());
-            
+
     } catch (\Exception $e) {
         DB::rollback();
         \Log::error('Cucian Store Error: ' . $e->getMessage());
@@ -248,7 +254,14 @@ class CucianController extends Controller
     public function edit($id)
     {
         $cucian = Cucian::with('detail.listHarga', 'layanan')->findOrFail($id);
-        $pelanggan = Pelanggan::where('status', 'aktif')->orderBy('nama')->get();
+        
+        // ✅ FIXED: Hilangkan duplikat pelanggan
+        $pelanggan = Pelanggan::where('status', 'aktif')
+            ->orderBy('nama')
+            ->get()
+            ->unique('no_telp')
+            ->values();
+        
         $layanan = Layanan::orderBy('nama_layanan')->get();
         $listHarga = ListHarga::orderBy('nama_item')->get();
         

@@ -265,6 +265,15 @@ class OrderController extends Controller
         
         return view('pelanggan.order.detail', compact('order', 'pelanggan'));
     }
+
+        /**
+     * Show order detail (alias untuk detail)
+     */
+    public function show($id)
+    {
+        return $this->detail($id);
+    }
+
     
     /**
      * ✅ NEW: Show form upload bukti pembayaran

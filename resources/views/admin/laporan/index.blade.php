@@ -32,6 +32,7 @@
                         <select class="form-select" name="filter_type" id="filter_type" onchange="toggleDateFilter()">
                             <option value="hari" {{ $filterType == 'hari' ? 'selected' : '' }}>Per Hari</option>
                             <option value="bulan" {{ $filterType == 'bulan' ? 'selected' : '' }}>Per Bulan</option>
+                            <option value="tahun" {{ $filterType == 'tahun' ? 'selected' : '' }}>Per Tahun</option>
                         </select>
                     </div>
 
@@ -43,6 +44,15 @@
                     <div class="col-lg-3 col-md-6 mb-3" id="filter-bulan" style="{{ $filterType == 'bulan' ? '' : 'display:none;' }}">
                         <label class="form-label">Pilih Bulan</label>
                         <input type="month" class="form-control" name="bulan" value="{{ $bulan }}" max="{{ now()->format('Y-m') }}">
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3" id="filter-tahun" style="{{ $filterType == 'tahun' ? '' : 'display:none;' }}">
+                        <label class="form-label">Pilih Tahun</label>
+                        <select class="form-select" name="tahun">
+                            @for($y = now()->year; $y >= 2020; $y--)
+                                <option value="{{ $y }}" {{ $tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endfor
+                        </select>
                     </div>
 
                     <div class="col-lg-3 col-md-6 mb-3">
@@ -58,7 +68,7 @@
 
     {{-- Summary Cards --}}
     <div class="row">
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
             <div class="card card-body bg-primary-light">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -72,7 +82,7 @@
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
             <div class="card card-body bg-success-light">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -86,7 +96,7 @@
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
             <div class="card card-body bg-warning-light">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
@@ -99,27 +109,13 @@
                 </div>
             </div>
         </div>
-
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card card-body bg-info-light">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="text-muted mb-1">Periode</h6>
-                        <h6 class="mb-0 text-info">{{ $periodeText }}</h6>
-                    </div>
-                    <div class="icon-box icon-box-lg bg-info text-white">
-                        <i class="material-icons md-calendar_today"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    {{-- Chart (hanya untuk filter bulan) --}}
-    @if($filterType == 'bulan' && $chartData)
+    {{-- Chart --}}
+    @if($chartData)
     <div class="card mb-4">
         <div class="card-header">
-            <h5>Grafik Penghasilan Harian</h5>
+            <h5>Grafik Penghasilan {{ $filterType == 'tahun' ? 'Bulanan' : 'Harian' }}</h5>
         </div>
         <div class="card-body">
             <canvas id="chartPenghasilan" height="80"></canvas>
@@ -294,9 +290,10 @@ function toggleDateFilter() {
     const filterType = document.getElementById('filter_type').value;
     document.getElementById('filter-hari').style.display = filterType === 'hari' ? 'block' : 'none';
     document.getElementById('filter-bulan').style.display = filterType === 'bulan' ? 'block' : 'none';
+    document.getElementById('filter-tahun').style.display = filterType === 'tahun' ? 'block' : 'none';
 }
 
-@if($filterType == 'bulan' && $chartData)
+@if($chartData)
 // Chart Penghasilan
 const ctx = document.getElementById('chartPenghasilan').getContext('2d');
 const chart = new Chart(ctx, {

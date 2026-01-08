@@ -16,7 +16,8 @@ class Cucian extends Model
     protected $fillable = [
         'pelanggan_id',
         'layanan_id',
-        'jenis_cucian', // ✅ TAMBAHAN BARU
+        'jenis_cucian',
+        'metode_cuci',
         'jenis_order',
         'jenis_ambil',
         'tgl_order',
@@ -211,5 +212,40 @@ class Cucian extends Model
             return 'Rp ' . number_format($this->total_harga, 0, ',', '.');
         }
         return '-';
+    }
+
+        /**
+     * Reduce stok plastik saat cucian selesai
+     */
+    public function reduceStokPlastik()
+    {
+        if ($this->jenis_cucian === 'kiloan') {
+            // Kurangi 1 plastik kiloan
+            $plastikKiloan = \App\Models\StokBahan::where('jenis_bahan', 'Plastik Laundry')
+                                                ->where('merk', 'Kiloan')
+                                                ->first();
+            if ($plastikKiloan && $plastikKiloan->stok_tersedia > 0) {
+                $plastikKiloan->decrement('stok_tersedia', 1);
+                
+                \Log::info("Stok plastik kiloan berkurang", [
+                    'cucian_id' => $this->cucian_id,
+                    'sisa_stok' => $plastikKiloan->stok_tersedia
+                ]);
+            }
+        } else {
+            // Kurangi plastik satuan sesuai total_item
+            $plastikSatuan = \App\Models\StokBahan::where('jenis_bahan', 'Plastik Laundry')
+                                                ->where('merk', 'Satuan')
+                                                ->first();
+            if ($plastikSatuan && $plastikSatuan->stok_tersedia >= $this->total_item) {
+                $plastikSatuan->decrement('stok_tersedia', $this->total_item);
+                
+                \Log::info("Stok plastik satuan berkurang", [
+                    'cucian_id' => $this->cucian_id,
+                    'jumlah' => $this->total_item,
+                    'sisa_stok' => $plastikSatuan->stok_tersedia
+                ]);
+            }
+        }
     }
 }

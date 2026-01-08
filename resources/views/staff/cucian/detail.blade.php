@@ -44,6 +44,9 @@
                         </div>
                     </div>
 
+                    <hr>
+
+                    {{-- Baris dengan 4 kolom (tambahkan Metode Cuci) --}}
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Jenis Order</p>
@@ -61,11 +64,33 @@
                                 @endif
                             </p>
                         </div>
+                        
+                        {{-- ✅ TAMBAHAN BARU: Metode Cuci --}}
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">
+                                <i class="material-icons md-local_laundry_service" style="font-size: 14px; vertical-align: middle;"></i>
+                                Metode Cuci
+                            </p>
+                            <p class="fw-bold">
+                                @if($cucian->metode_cuci == 'express')
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="material-icons md-flash_on" style="font-size: 12px; vertical-align: middle;"></i>
+                                        Express (+50%)
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary">Normal</span>
+                                @endif
+                            </p>
+                        </div>
+                        
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Jenis Pengambilan</p>
                             <p class="fw-bold">{{ $cucian->jenis_ambil == 'diantar' ? 'Diantar' : 'Ambil Sendiri' }}</p>
                         </div>
-                        <div class="col-md-3">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <p class="text-muted mb-1">Estimasi Selesai</p>
                             <p class="fw-bold">{{ $cucian->estimasi ? $cucian->estimasi->format('d M Y') : '-' }}</p>
                         </div>
@@ -73,20 +98,28 @@
 
                     <hr>
 
+                    {{-- Sisanya tetap sama (Data Pelanggan, Layanan, dll) --}}
                     <h5 class="mb-3">Data Pelanggan</h5>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <p class="text-muted mb-1"><i class="material-icons md-person"></i> Nama Pelanggan</p>
+                            <p class="text-muted mb-1">
+                                <i class="material-icons md-person"></i> Nama Pelanggan
+                            </p>
                             <p class="fw-bold">{{ $cucian->pelanggan->nama ?? 'N/A' }}</p>
                         </div>
                         <div class="col-md-6">
-                            <p class="text-muted mb-1"><i class="material-icons md-phone"></i> No Telepon</p>
+                            <p class="text-muted mb-1">
+                                <i class="material-icons md-phone"></i> No Telepon
+                            </p>
                             <p class="fw-bold">{{ $cucian->pelanggan->no_telp ?? '-' }}</p>
                         </div>
                     </div>
+
                     <div class="row mb-3">
                         <div class="col-md-12">
-                            <p class="text-muted mb-1"><i class="material-icons md-location_on"></i> Alamat</p>
+                            <p class="text-muted mb-1">
+                                <i class="material-icons md-location_on"></i> Alamat
+                            </p>
                             <p class="fw-bold">{{ $cucian->pelanggan->alamat ?? '-' }}</p>
                         </div>
                     </div>
@@ -108,10 +141,10 @@
                     @if($cucian->catatan)
                     <hr>
                     <div class="mb-3">
-                        <p class="text-muted mb-1"><i class="material-icons md-note"></i> Catatan</p>
-                        <div class="alert alert-info">
-                            {{ $cucian->catatan }}
-                        </div>
+                        <p class="text-muted mb-1">
+                            <i class="material-icons md-note"></i> Catatan
+                        </p>
+                        <div class="alert alert-info">{{ $cucian->catatan }}</div>
                     </div>
                     @endif
                 </div>

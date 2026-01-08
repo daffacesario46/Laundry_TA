@@ -26,19 +26,18 @@
                         @method('PUT')
                         
                         <div class="row">
-                            <!-- Jenis Bahan -->
                             <div class="col-md-6 mb-4">
                                 <label class="form-label">Jenis Bahan <span class="text-danger">*</span></label>
-                                <select name="jenis_bahan" class="form-select @error('jenis_bahan') is-invalid @enderror" required>
-                                    <option value="">Pilih Jenis Bahan</option>
-                                    <option value="detergen" {{ old('jenis_bahan', $stokBahan->jenis_bahan) == 'detergen' ? 'selected' : '' }}>Detergen</option>
-                                    <option value="pewangi" {{ old('jenis_bahan', $stokBahan->jenis_bahan) == 'pewangi' ? 'selected' : '' }}>Pewangi</option>
-                                    <option value="pelembut" {{ old('jenis_bahan', $stokBahan->jenis_bahan) == 'pelembut' ? 'selected' : '' }}>Pelembut</option>
-                                    <option value="pemutih" {{ old('jenis_bahan', $stokBahan->jenis_bahan) == 'pemutih' ? 'selected' : '' }}>Pemutih</option>
-                                </select>
+                                <input type="text" 
+                                    name="jenis_bahan" 
+                                    class="form-control @error('jenis_bahan') is-invalid @enderror" 
+                                    placeholder="Contoh: Detergen, Pewangi, Plastik Laundry, dll"
+                                    value="{{ old('jenis_bahan', $stokBahan->jenis_bahan) }}"
+                                    required>
                                 @error('jenis_bahan')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <small class="text-muted">Ketik jenis bahan</small>
                             </div>
 
                             <!-- Merk -->

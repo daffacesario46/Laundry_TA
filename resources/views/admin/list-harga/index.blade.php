@@ -65,7 +65,6 @@
                                 <th>No</th>
                                 <th>Nama Item</th>
                                 <th>Harga Satuan</th>
-                                <th>Harga Kiloan</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -75,7 +74,6 @@
                                 <td>{{ $listHarga->firstItem() + $index }}</td>
                                 <td><strong>{{ $item->nama_item }}</strong></td>
                                 <td>{{ $item->getFormattedHargaSatuan() }}</td>
-                                <td>{{ $item->getFormattedHargaKiloan() }}</td>
                                 <td>
                                     <div class="dropdown">
                                         <a href="#" data-bs-toggle="dropdown" class="btn btn-sm btn-light">

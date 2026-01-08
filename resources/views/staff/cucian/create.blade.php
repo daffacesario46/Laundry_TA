@@ -69,117 +69,138 @@
                     </div>
                 </div>
 
+
                 <!-- Info Layanan -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Informasi Layanan</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="layanan_id" class="form-label">Jenis Layanan <span class="text-danger">*</span></label>
-                            <select class="form-select @error('layanan_id') is-invalid @enderror" 
-                                    id="layanan_id" name="layanan_id" required>
-                                <option value="">-- Pilih Layanan --</option>
-                                @foreach($layanan as $l)
-                                <option value="{{ $l->layanan_id }}" 
-                                        data-jenis="{{ $l->jenis_cucian }}"
-                                        data-durasi="{{ $l->durasi_hari }}"
-                                        {{ old('layanan_id') == $l->layanan_id ? 'selected' : '' }}>
-                                    {{ $l->nama_layanan }} ({{ $l->durasi_hari }} hari)
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('layanan_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Informasi Layanan</h4>
                         </div>
-
-                        <!-- ✅ TAMBAHAN BARU: Dropdown Jenis Cucian -->
-                        <div class="mb-3">
-                            <label for="jenis_cucian" class="form-label">Jenis Cucian <span class="text-danger">*</span></label>
-                            <select class="form-select @error('jenis_cucian') is-invalid @enderror" 
-                                    id="jenis_cucian" name="jenis_cucian" required>
-                                <option value="">-- Pilih Jenis Cucian --</option>
-                                <option value="kiloan" {{ old('jenis_cucian') == 'kiloan' ? 'selected' : '' }}>
-                                    Kiloan (Per Kilogram)
-                                </option>
-                                <option value="satuan" {{ old('jenis_cucian') == 'satuan' ? 'selected' : '' }}>
-                                    Satuan (Per Item)
-                                </option>
-                            </select>
-                            @error('jenis_cucian')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <small class="text-muted">
-                                <i class="material-icons md-info" style="font-size: 14px;"></i>
-                                Pilih kiloan untuk cucian ditimbang per Kg, atau satuan untuk per item (kaos, celana, dll)
-                            </small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="jenis_ambil" class="form-label">Jenis Pengambilan <span class="text-danger">*</span></label>
-                                <select class="form-select @error('jenis_ambil') is-invalid @enderror" 
-                                        id="jenis_ambil" name="jenis_ambil" required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="diantar" {{ old('jenis_ambil') == 'diantar' ? 'selected' : '' }}>Diantar</option>
-                                    <option value="ambil_sendiri" {{ old('jenis_ambil') == 'ambil_sendiri' ? 'selected' : '' }}>Ambil Sendiri</option>
+                        <div class="card-body">
+                            
+                            {{-- 1. JENIS CUCIAN --}}
+                            <div class="mb-3">
+                                <label for="jenis_cucian" class="form-label">Jenis Cucian <span class="text-danger">*</span></label>
+                                <select class="form-select @error('jenis_cucian') is-invalid @enderror" 
+                                        id="jenis_cucian" name="jenis_cucian" required>
+                                    <option value="">-- Pilih Jenis Cucian --</option>
+                                    <option value="kiloan" {{ old('jenis_cucian') == 'kiloan' ? 'selected' : '' }}>
+                                        Kiloan (Per Kilogram)
+                                    </option>
+                                    <option value="satuan" {{ old('jenis_cucian') == 'satuan' ? 'selected' : '' }}>
+                                        Satuan (Per Item)
+                                    </option>
                                 </select>
-                                @error('jenis_ambil')
+                                @error('jenis_cucian')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">
+                                    <i class="material-icons md-info" style="font-size: 14px;"></i>
+                                    Pilih jenis cucian dulu, lalu layanan akan muncul sesuai jenis
+                                </small>
+                            </div>
+
+                            {{-- 2. JENIS LAYANAN --}}
+                            <div class="mb-3">
+                                <label for="layanan_id" class="form-label">Jenis Layanan <span class="text-danger">*</span></label>
+                                <select class="form-select @error('layanan_id') is-invalid @enderror" 
+                                        id="layanan_id" name="layanan_id" required disabled>
+                                    <option value="">-- Pilih Jenis Cucian Dulu --</option>
+                                    @foreach($layanan as $l)
+                                    <option value="{{ $l->layanan_id }}" 
+                                            data-jenis="{{ $l->jenis_cucian }}"
+                                            data-durasi="{{ $l->durasi_hari }}"
+                                            {{ old('layanan_id') == $l->layanan_id ? 'selected' : '' }}>
+                                        {{ $l->nama_layanan }} ({{ $l->durasi_hari }} hari)
+                                    </option>
+                                    @endforeach
+                                </select>
+                                @error('layanan_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="metode_bayar" class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
-                                <select class="form-select @error('metode_bayar') is-invalid @enderror" 
-                                        id="metode_bayar" name="metode_bayar" required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="cash" {{ old('metode_bayar') == 'cash' ? 'selected' : '' }}>Cash</option>
-                                    <option value="transfer" {{ old('metode_bayar') == 'transfer' ? 'selected' : '' }}>Transfer</option>
-                                    <option value="e-wallet" {{ old('metode_bayar') == 'e-wallet' ? 'selected' : '' }}>E-Wallet</option>
+                            {{-- ✅ 3. METODE CUCI (BARU) --}}
+                            <div class="mb-3">
+                                <label for="metode_cuci" class="form-label">Metode Cuci <span class="text-danger">*</span></label>
+                                <select class="form-select @error('metode_cuci') is-invalid @enderror" 
+                                        id="metode_cuci" name="metode_cuci" required>
+                                    <option value="">-- Pilih Metode --</option>
+                                    <option value="normal" {{ old('metode_cuci') == 'normal' ? 'selected' : '' }}>
+                                        Normal (Harga Standar)
+                                    </option>
+                                    <option value="express" {{ old('metode_cuci') == 'express' ? 'selected' : '' }}>
+                                        Express (+50% dari harga)
+                                    </option>
                                 </select>
-                                @error('metode_bayar')
+                                @error('metode_cuci')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <small class="text-muted">
+                                    <i class="material-icons md-info" style="font-size: 14px;"></i>
+                                    Express akan menambah biaya 50% dari total harga layanan
+                                </small>
+                            </div>
+
+                            {{-- Row untuk Jenis Ambil dan Metode Bayar --}}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="jenis_ambil" class="form-label">Jenis Pengambilan <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('jenis_ambil') is-invalid @enderror" 
+                                            id="jenis_ambil" name="jenis_ambil" required>
+                                        <option value="ambil_sendiri" {{ old('jenis_ambil') == 'ambil_sendiri' ? 'selected' : '' }}>
+                                            Ambil Sendiri
+                                        </option>
+                                    </select>
+                                    @error('jenis_ambil')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="metode_bayar" class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('metode_bayar') is-invalid @enderror" 
+                                            id="metode_bayar" name="metode_bayar" required>
+                                        <option value="">-- Pilih --</option>
+                                        <option value="cash" {{ old('metode_bayar') == 'cash' ? 'selected' : '' }}>Cash</option>
+                                        <option value="transfer" {{ old('metode_bayar') == 'transfer' ? 'selected' : '' }}>Transfer</option>
+                                    </select>
+                                    @error('metode_bayar')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="catatan" class="form-label">Catatan (Opsional)</label>
+                                <textarea class="form-control" id="catatan" name="catatan" rows="2" 
+                                        placeholder="Catatan tambahan (opsional)">{{ old('catatan') }}</textarea>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="catatan" class="form-label">Catatan (Opsional)</label>
-                            <textarea class="form-control" id="catatan" name="catatan" rows="2" 
-                                      placeholder="Catatan tambahan (opsional)">{{ old('catatan') }}</textarea>
-                        </div>
                     </div>
-                </div>
 
+
+                
                 <!-- FORM KILOAN OFFLINE -->
                 <div class="card mb-4 card-kiloan-offline" style="display:none;">
                     <div class="card-header bg-warning text-white">
                         <h4 class="text-white mb-0">
-                            <i class="material-icons md-scale"></i>
-                            Input Berat Cucian (Kiloan)
+                            <i class="material-icons md-scale"></i> Input Berat Cucian (Kiloan)
                         </h4>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="material-icons md-info"></i>
-                            <strong>Cucian Offline - Kiloan:</strong> 
-                            Silakan timbang cucian dan input beratnya di bawah. Total harga akan otomatis dihitung.
+                            <strong>Cucian Offline - Kiloan:</strong> Silakan timbang cucian dan input beratnya di bawah. Total harga akan otomatis dihitung.
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="berat_kiloan" class="form-label">Berat Cucian (Kg) <span class="text-danger">*</span></label>
                                 <div class="input-group input-group-lg">
-                                    <input type="number" 
-                                           class="form-control @error('berat_kiloan') is-invalid @enderror" 
-                                           id="berat_kiloan" 
-                                           name="berat_kiloan" 
-                                           step="0.1" 
-                                           min="0.1"
-                                           placeholder="0.0"
-                                           value="{{ old('berat_kiloan') }}">
+                                    <input type="number" class="form-control @error('berat_kiloan') is-invalid @enderror" 
+                                        id="berat_kiloan" name="berat_kiloan" 
+                                        step="0.1" min="0.1" placeholder="0.0" 
+                                        value="{{ old('berat_kiloan') }}">
                                     <span class="input-group-text">Kg</span>
                                 </div>
                                 @error('berat_kiloan')
@@ -197,18 +218,37 @@
                             </div>
                         </div>
 
+                        {{-- ✅ PREVIEW KALKULASI DENGAN BIAYA EXPRESS --}}
                         <div class="card bg-light">
                             <div class="card-body">
                                 <h5 class="mb-2">Preview Kalkulasi</h5>
+                                
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Berat:</span>
                                     <strong id="preview-berat">0.0 Kg</strong>
                                 </div>
+                                
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Harga per Kg:</span>
                                     <strong id="preview-harga">Rp 0</strong>
                                 </div>
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <strong id="preview-subtotal">Rp 0</strong>
+                                </div>
+                                
+                                {{-- ✅ Biaya Express (Conditional) --}}
+                                <div class="d-flex justify-content-between mb-2" id="preview-express-row" style="display: none;">
+                                    <span class="text-warning">
+                                        <i class="material-icons md-flash_on" style="font-size: 14px; vertical-align: middle;"></i>
+                                        Biaya Express (50%):
+                                    </span>
+                                    <strong class="text-warning" id="preview-express">Rp 0</strong>
+                                </div>
+                                
                                 <hr>
+                                
                                 <div class="d-flex justify-content-between">
                                     <h5>Total Harga:</h5>
                                     <h5 class="text-primary" id="estimasi_kiloan">Rp 0</h5>
@@ -217,6 +257,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <!-- FORM ITEM SATUAN -->
                 <div class="card mb-4 card-item-satuan" style="display:none;">
@@ -333,24 +374,99 @@
 let itemIndex = 0;
 let hargaPerKgGlobal = 0;
 
-// Load pelanggan info saat dipilih
+// Simpan semua opsi layanan
+const layananSelect = document.getElementById('layanan_id');
+const allLayananOptions = Array.from(layananSelect.querySelectorAll('option'));
+
+// ✅ Event listener untuk metode cuci
+document.getElementById('metode_cuci')?.addEventListener('change', function() {
+    // Re-calculate harga saat metode cuci berubah
+    const jenisCucian = document.getElementById('jenis_cucian')?.value;
+    
+    if (jenisCucian === 'kiloan') {
+        calculateKiloan();
+    } else if (jenisCucian === 'satuan') {
+        updateSummary();
+    }
+});
+
+// Filter layanan berdasarkan jenis cucian
+document.getElementById('jenis_cucian')?.addEventListener('change', function() {
+    const selectedJenis = this.value;
+    
+    layananSelect.innerHTML = '';
+    layananSelect.disabled = !selectedJenis;
+    
+    if (!selectedJenis) {
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Pilih Jenis Cucian Dulu --';
+        layananSelect.appendChild(defaultOption);
+        handleJenisCucianChange();
+        return;
+    }
+    
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = '-- Pilih Layanan --';
+    layananSelect.appendChild(placeholderOption);
+    
+    let hasMatchingLayanan = false;
+    allLayananOptions.forEach(option => {
+        if (option.value === '') return;
+        
+        const optionJenis = option.dataset.jenis;
+        
+        if (optionJenis === selectedJenis) {
+            layananSelect.appendChild(option.cloneNode(true));
+            hasMatchingLayanan = true;
+        }
+    });
+    
+    if (!hasMatchingLayanan) {
+        const noDataOption = document.createElement('option');
+        noDataOption.value = '';
+        noDataOption.textContent = `-- Tidak ada layanan ${selectedJenis} --`;
+        layananSelect.appendChild(noDataOption);
+    }
+    
+    handleJenisCucianChange();
+});
+
+// Load pelanggan info
 document.getElementById('pelanggan_id')?.addEventListener('change', function() {
     const option = this.options[this.selectedIndex];
     document.getElementById('display_telp').value = option.dataset.telp || '-';
     document.getElementById('display_alamat').value = option.dataset.alamat || '-';
 });
 
-// ✅ Handle jenis cucian change (BARU)
-document.getElementById('jenis_cucian')?.addEventListener('change', handleJenisCucianChange);
-
-// Handle input berat untuk kiloan
+// Handle input berat
 document.getElementById('berat_kiloan')?.addEventListener('input', calculateKiloan);
+
+// ✅ FUNGSI GET EXPRESS MULTIPLIER
+function getExpressMultiplier() {
+    const metodeCuci = document.getElementById('metode_cuci')?.value;
+    return metodeCuci === 'express' ? 1.5 : 1; // Express = 150% (1 + 0.5)
+}
+
+// ✅ FUNGSI SHOW/HIDE EXPRESS INFO
+function updateExpressDisplay(subtotal, isExpress) {
+    const expressRow = document.getElementById('preview-express-row');
+    const expressAmount = document.getElementById('preview-express');
+    
+    if (isExpress && subtotal > 0) {
+        const biayaExpress = subtotal * 0.5; // 50% dari subtotal
+        expressAmount.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(biayaExpress);
+        if (expressRow) expressRow.style.display = 'flex';
+    } else {
+        if (expressRow) expressRow.style.display = 'none';
+    }
+}
 
 function handleJenisCucianChange() {
     const jenisCucianSelect = document.getElementById('jenis_cucian');
-    const jenisCucian = jenisCucianSelect.value;
+    const jenisCucian = jenisCucianSelect?.value;
 
-    // Hide all sections first
     const cardKiloan = document.querySelector('.card-kiloan-offline');
     const cardSatuan = document.querySelector('.card-item-satuan');
     
@@ -363,57 +479,69 @@ function handleJenisCucianChange() {
         return;
     }
 
-    // Update summary jenis
-    document.getElementById('summary-jenis').textContent = jenisCucian.charAt(0).toUpperCase() + jenisCucian.slice(1);
+    document.getElementById('summary-jenis').textContent = 
+        jenisCucian.charAt(0).toUpperCase() + jenisCucian.slice(1);
 
-    // Show form berdasarkan jenis cucian
     if (jenisCucian === 'kiloan') {
-        // KILOAN OFFLINE: Tampilkan form input berat
         if (cardKiloan) cardKiloan.style.display = 'block';
         loadHargaKiloan();
         
-        // Reset summary
         document.getElementById('summary-items').textContent = '1 batch';
         document.getElementById('summary-weight').textContent = '0 Kg';
         document.getElementById('summary-total').textContent = 'Rp 0';
         
-        // Trigger calculate jika ada nilai
         const beratInput = document.getElementById('berat_kiloan');
         if (beratInput && beratInput.value) {
             calculateKiloan();
         }
     } else if (jenisCucian === 'satuan') {
-        // SATUAN: Tampilkan form item
         if (cardSatuan) cardSatuan.style.display = 'block';
         updateSummary();
     }
 }
 
 function loadHargaKiloan() {
-    // Ambil harga kiloan dari list harga pertama yang punya harga kiloan
     const listHarga = @json($listHarga->where('harga_kiloan', '>', 0)->first());
+    
     if (listHarga) {
         hargaPerKgGlobal = listHarga.harga_kiloan;
-        document.getElementById('harga_per_kg').value = new Intl.NumberFormat('id-ID').format(hargaPerKgGlobal);
-        document.getElementById('preview-harga').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(hargaPerKgGlobal);
+        document.getElementById('harga_per_kg').value = 
+            new Intl.NumberFormat('id-ID').format(hargaPerKgGlobal);
+        document.getElementById('preview-harga').textContent = 
+            'Rp ' + new Intl.NumberFormat('id-ID').format(hargaPerKgGlobal);
     }
 }
 
+// ✅ CALCULATE KILOAN DENGAN EXPRESS
 function calculateKiloan() {
     const beratInput = document.getElementById('berat_kiloan');
     const berat = parseFloat(beratInput?.value) || 0;
-    const total = berat * hargaPerKgGlobal;
+    const subtotal = berat * hargaPerKgGlobal;
     
+    // Apply express multiplier
+    const multiplier = getExpressMultiplier();
+    const total = subtotal * multiplier;
+    const isExpress = multiplier > 1;
+
     // Update preview
     document.getElementById('preview-berat').textContent = berat.toFixed(1) + ' Kg';
-    document.getElementById('estimasi_kiloan').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+    document.getElementById('preview-subtotal').textContent = 
+        'Rp ' + new Intl.NumberFormat('id-ID').format(subtotal);
     
+    // Show/hide biaya express
+    updateExpressDisplay(subtotal, isExpress);
+    
+    document.getElementById('estimasi_kiloan').textContent = 
+        'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+
     // Update summary
     document.getElementById('summary-weight').textContent = berat.toFixed(1) + ' Kg';
-    document.getElementById('summary-total').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+    document.getElementById('summary-total').textContent = 
+        'Rp ' + new Intl.NumberFormat('id-ID').format(total);
     document.getElementById('summary-items').textContent = '1 batch';
 }
 
+// Item satuan functions
 function addItem() {
     itemIndex++;
     const container = document.getElementById('items-container');
@@ -428,26 +556,23 @@ function addItem() {
                 <select class="form-select item-select" name="items[${itemIndex}][list_harga_id]">
                     <option value="">-- Pilih Item --</option>
                     @foreach($listHarga->where('harga_satuan', '>', 0) as $lh)
-                    <option value="{{ $lh->list_harga_id }}" 
-                            data-satuan="{{ $lh->harga_satuan }}">
+                    <option value="{{ $lh->list_harga_id }}" data-satuan="{{ $lh->harga_satuan }}">
                         {{ $lh->nama_item }} - Rp {{ number_format($lh->harga_satuan, 0, ',', '.') }}
                     </option>
                     @endforeach
                 </select>
             </div>
-
             <div class="col-md-3 mb-3">
                 <label class="form-label">Jumlah</label>
-                <input type="number" class="form-control item-jumlah" name="items[${itemIndex}][jumlah]" min="1" value="1">
+                <input type="number" class="form-control item-jumlah" 
+                       name="items[${itemIndex}][jumlah]" min="1" value="1">
             </div>
-
             <div class="col-md-3 mb-3 d-flex align-items-end">
                 <button type="button" class="btn btn-danger w-100" onclick="removeItem(${itemIndex})">
                     <i class="material-icons md-delete"></i>
                 </button>
             </div>
         </div>
-
         <div class="row">
             <div class="col-12">
                 <label class="form-label">Deskripsi (Opsional)</label>
@@ -459,10 +584,8 @@ function addItem() {
     
     container.appendChild(newItem);
     
-    // Add event listeners untuk update summary
     const select = newItem.querySelector('.item-select');
     const jumlah = newItem.querySelector('.item-jumlah');
-    
     select.addEventListener('change', updateSummary);
     jumlah.addEventListener('input', updateSummary);
 }
@@ -475,26 +598,34 @@ function removeItem(index) {
     }
 }
 
+// ✅ UPDATE SUMMARY UNTUK SATUAN DENGAN EXPRESS
 function updateSummary() {
-    let totalItems = 0;
-    let totalPrice = 0;
+    let totalItems = 0;  // Total jumlah pieces
+    let subtotal = 0;
 
     document.querySelectorAll('.item-row').forEach(row => {
-        const select = row.querySelector('select[name^="items"]');
+        const select = row.querySelector('select[name*="list_harga_id"]');
         const option = select?.options[select.selectedIndex];
         
         if (option && option.value) {
-            totalItems++;
             const hargaSatuan = parseFloat(option.dataset.satuan) || 0;
-            const jumlahInput = row.querySelector('input[name$="[jumlah]"]');
+            const jumlahInput = row.querySelector('input[name*="jumlah"]');
             const jumlah = parseInt(jumlahInput?.value) || 1;
-            totalPrice += jumlah * hargaSatuan;
+            
+            // ✅ PERBAIKAN: Tambahkan jumlah sebenarnya, bukan increment
+            totalItems += jumlah;  // Sekarang: 12 + 1 = 13
+            subtotal += jumlah * hargaSatuan;
         }
     });
 
-    document.getElementById('summary-items').textContent = totalItems;
+    // Apply express multiplier
+    const multiplier = getExpressMultiplier();
+    const total = subtotal * multiplier;
+
+    // ✅ Tampilkan dengan satuan
+    document.getElementById('summary-items').textContent = totalItems + ' pcs';
     document.getElementById('summary-weight').textContent = '-';
-    document.getElementById('summary-total').textContent = 'Rp ' + totalPrice.toLocaleString('id-ID');
+    document.getElementById('summary-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
 }
 
 function resetSummary() {
@@ -506,11 +637,11 @@ function resetSummary() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     const jenisCucianSelect = document.getElementById('jenis_cucian');
+    
     if (jenisCucianSelect?.value) {
-        handleJenisCucianChange();
+        jenisCucianSelect.dispatchEvent(new Event('change'));
     }
     
-    // Add event listeners untuk items yang sudah ada (dari old input)
     document.querySelectorAll('.item-select').forEach(select => {
         select.addEventListener('change', updateSummary);
     });
@@ -519,7 +650,6 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', updateSummary);
     });
     
-    // Load pelanggan info if already selected
     const pelangganSelect = document.getElementById('pelanggan_id');
     if (pelangganSelect?.value) {
         const option = pelangganSelect.options[pelangganSelect.selectedIndex];
@@ -528,4 +658,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
 @endsection

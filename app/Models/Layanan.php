@@ -17,10 +17,12 @@ class Layanan extends Model
         'nama_layanan',
         'jenis_cucian',
         'deskripsi',
-        'durasi_hari'
+        'durasi_hari',
+        'harga'
     ];
 
     protected $casts = [
+        'harga' => 'double',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -32,6 +34,54 @@ class Layanan extends Model
     }
 
     // Helpers
+
+
+    const EXPRESS_MARKUP = 0.30; // 30%
+
+    /**
+     * Get harga normal (formatted)
+     */
+    public function getFormattedHarga()
+    {
+        return 'Rp ' . number_format($this->harga, 0, ',', '.');
+    }
+
+    /**
+     * Get harga express (harga + 30%)
+     */
+    public function getHargaExpress()
+    {
+        return $this->harga * (1 + self::EXPRESS_MARKUP);
+    }
+
+    /**
+     * Get harga express (formatted)
+     */
+    public function getFormattedHargaExpress()
+    {
+        return 'Rp ' . number_format($this->getHargaExpress(), 0, ',', '.');
+    }
+
+    /**
+     * Get harga by type (normal/express)
+     */
+    public function getHargaByType($type = 'normal')
+    {
+        if ($type === 'express') {
+            return $this->getHargaExpress();
+        }
+        return $this->harga;
+    }
+
+    /**
+     * Get markup percentage text
+     */
+    public function getExpressMarkupText()
+    {
+        return '+' . (self::EXPRESS_MARKUP * 100) . '%';
+    }
+
+
     public function isKiloan()
     {
         return $this->jenis_cucian === 'kiloan';

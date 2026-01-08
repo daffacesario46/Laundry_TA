@@ -43,8 +43,11 @@ class DashboardController extends Controller
                        ->paginate($perPage);
         
         $jenis_order = 'Selesai';
-        
-        return view('admin.dashboard.index', compact('cucian', 'jenis_order'));
+        // Get stok bahan yang menipis
+        $stokMenipis = \App\Models\StokBahan::whereRaw('stok_tersedia <= stok_minimum')
+                                         ->get();
+
+        return view('admin.dashboard.index', compact('cucian', 'jenis_order', 'stokMenipis'));
     }
     
     public function detail($cucian_id)

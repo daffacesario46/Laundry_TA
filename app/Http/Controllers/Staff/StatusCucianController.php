@@ -152,6 +152,16 @@ class StatusCucianController extends Controller
             }
             
             $cucian->save();
+                // ✅ AUTO-REDUCE STOK PLASTIK saat status jadi "selesai"
+                if ($newStatus === 'selesai' && $currentStatus !== 'selesai') {
+                    try {
+                        $cucian->reduceStokPlastik();
+                    } catch (\Exception $e) {
+                        \Log::warning('Gagal reduce stok plastik: ' . $e->getMessage());
+                        // Tidak perlu rollback, cukup log warning
+                    }
+                }
+
             
             DB::commit();
             

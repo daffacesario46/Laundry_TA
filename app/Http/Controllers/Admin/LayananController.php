@@ -44,6 +44,7 @@ class LayananController extends Controller
             'nama_layanan' => 'required|string|max:100',
             'jenis_cucian' => 'required|in:kiloan,satuan',
             'durasi_hari' => 'required|integer|min:1',
+            'harga' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string'
         ], [
             'nama_layanan.required' => 'Nama layanan harus diisi',
@@ -51,13 +52,17 @@ class LayananController extends Controller
             'jenis_cucian.in' => 'Jenis cucian tidak valid',
             'durasi_hari.required' => 'Durasi hari harus diisi',
             'durasi_hari.integer' => 'Durasi hari harus berupa angka',
-            'durasi_hari.min' => 'Durasi hari minimal 1 hari'
+            'durasi_hari.min' => 'Durasi hari minimal 1 hari',
+            'harga.required' => 'Harga harus diisi', // ← TAMBAH INI
+            'harga.numeric' => 'Harga harus berupa angka', // ← TAMBAH INI
+            'harga.min' => 'Harga tidak boleh kurang dari 0' // ← TAMBAH INI
         ]);
         
         Layanan::create([
             'nama_layanan' => $request->nama_layanan,
             'jenis_cucian' => $request->jenis_cucian,
             'durasi_hari' => $request->durasi_hari,
+            'harga' => $request->harga,
             'deskripsi' => $request->deskripsi
         ]);
         
@@ -77,6 +82,7 @@ class LayananController extends Controller
             'nama_layanan' => 'required|string|max:100',
             'jenis_cucian' => 'required|in:kiloan,satuan',
             'durasi_hari' => 'required|integer|min:1',
+            'harga' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string'
         ], [
             'nama_layanan.required' => 'Nama layanan harus diisi',
@@ -84,7 +90,10 @@ class LayananController extends Controller
             'jenis_cucian.in' => 'Jenis cucian tidak valid',
             'durasi_hari.required' => 'Durasi hari harus diisi',
             'durasi_hari.integer' => 'Durasi hari harus berupa angka',
-            'durasi_hari.min' => 'Durasi hari minimal 1 hari'
+            'durasi_hari.min' => 'Durasi hari minimal 1 hari',
+            'harga.required' => 'Harga harus diisi', // ← TAMBAH INI
+            'harga.numeric' => 'Harga harus berupa angka', // ← TAMBAH INI
+            'harga.min' => 'Harga tidak boleh kurang dari 0' // ← TAMBAH INI
         ]);
         
         $layanan = Layanan::findOrFail($id);
@@ -92,6 +101,7 @@ class LayananController extends Controller
             'nama_layanan' => $request->nama_layanan,
             'jenis_cucian' => $request->jenis_cucian,
             'durasi_hari' => $request->durasi_hari,
+            'harga' => $request->harga,
             'deskripsi' => $request->deskripsi
         ]);
         

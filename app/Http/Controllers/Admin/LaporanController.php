@@ -21,12 +21,17 @@ class LaporanController extends Controller
         $filterType = $request->get('filter_type', 'bulan');
         $tanggal = $request->get('tanggal', now()->format('Y-m-d'));
         $bulan = $request->get('bulan', now()->format('Y-m'));
+        $tahun = $request->get('tahun', now()->format('Y'));
         
         // Parse dates
         if ($filterType === 'hari') {
             $startDate = Carbon::parse($tanggal)->startOfDay();
             $endDate = Carbon::parse($tanggal)->endOfDay();
             $periodeText = $startDate->isoFormat('D MMMM YYYY');
+        } elseif ($filterType === 'tahun') {
+            $startDate = Carbon::parse($tahun . '-01-01')->startOfYear();
+            $endDate = Carbon::parse($tahun . '-01-01')->endOfYear();
+            $periodeText = 'Tahun ' . $tahun;
         } else {
             $startDate = Carbon::parse($bulan . '-01')->startOfMonth();
             $endDate = Carbon::parse($bulan . '-01')->endOfMonth();
@@ -71,9 +76,11 @@ class LaporanController extends Controller
             ];
         })->values();
         
-        // Data untuk Chart (per hari dalam periode)
+        // Data untuk Chart
         if ($filterType === 'bulan') {
             $chartData = $this->getChartDataPerHari($startDate, $endDate);
+        } elseif ($filterType === 'tahun') {
+            $chartData = $this->getChartDataPerBulan($startDate, $endDate);
         } else {
             $chartData = null; // Tidak perlu chart untuk filter per hari
         }
@@ -82,9 +89,6 @@ class LaporanController extends Controller
         $stats = [
             'total_transaksi' => $pembayaran->count(),
             'rata_rata_transaksi' => $pembayaran->count() > 0 ? $totalPenghasilan / $pembayaran->count() : 0,
-            'transaksi_cash' => $pembayaran->where('metode_bayar', 'cash')->count(),
-            'transaksi_transfer' => $pembayaran->where('metode_bayar', 'transfer')->count(),
-            'transaksi_midtrans' => $pembayaran->where('metode_bayar', 'midtrans')->count(),
         ];
         
         return view('admin.laporan.index', compact(
@@ -98,6 +102,7 @@ class LaporanController extends Controller
             'filterType',
             'tanggal',
             'bulan',
+            'tahun',
             'periodeText',
             'startDate',
             'endDate'
@@ -131,6 +136,33 @@ class LaporanController extends Controller
     }
     
     /**
+     * Get chart data per bulan (untuk filter tahun)
+     */
+    private function getChartDataPerBulan($startDate, $endDate)
+    {
+        $months = [];
+        $totals = [];
+        
+        $currentMonth = $startDate->copy()->startOfMonth();
+        while ($currentMonth <= $endDate) {
+            $monthTotal = Pembayaran::where('status_bayar', 'lunas')
+                ->whereYear('tgl_bayar', $currentMonth->year)
+                ->whereMonth('tgl_bayar', $currentMonth->month)
+                ->sum('jumlah_bayar');
+            
+            $months[] = $currentMonth->isoFormat('MMM');
+            $totals[] = $monthTotal;
+            
+            $currentMonth->addMonth();
+        }
+        
+        return [
+            'labels' => $months,
+            'data' => $totals
+        ];
+    }
+    
+    /**
      * Export to PDF
      */
     public function exportPdf(Request $request)
@@ -138,11 +170,16 @@ class LaporanController extends Controller
         $filterType = $request->get('filter_type', 'bulan');
         $tanggal = $request->get('tanggal', now()->format('Y-m-d'));
         $bulan = $request->get('bulan', now()->format('Y-m'));
+        $tahun = $request->get('tahun', now()->format('Y'));
         
         if ($filterType === 'hari') {
             $startDate = Carbon::parse($tanggal)->startOfDay();
             $endDate = Carbon::parse($tanggal)->endOfDay();
             $periodeText = $startDate->isoFormat('D MMMM YYYY');
+        } elseif ($filterType === 'tahun') {
+            $startDate = Carbon::parse($tahun . '-01-01')->startOfYear();
+            $endDate = Carbon::parse($tahun . '-01-01')->endOfYear();
+            $periodeText = 'Tahun ' . $tahun;
         } else {
             $startDate = Carbon::parse($bulan . '-01')->startOfMonth();
             $endDate = Carbon::parse($bulan . '-01')->endOfMonth();
@@ -188,10 +225,14 @@ class LaporanController extends Controller
         $filterType = $request->get('filter_type', 'bulan');
         $tanggal = $request->get('tanggal', now()->format('Y-m-d'));
         $bulan = $request->get('bulan', now()->format('Y-m'));
+        $tahun = $request->get('tahun', now()->format('Y'));
         
         if ($filterType === 'hari') {
             $startDate = Carbon::parse($tanggal)->startOfDay();
             $endDate = Carbon::parse($tanggal)->endOfDay();
+        } elseif ($filterType === 'tahun') {
+            $startDate = Carbon::parse($tahun . '-01-01')->startOfYear();
+            $endDate = Carbon::parse($tahun . '-01-01')->endOfYear();
         } else {
             $startDate = Carbon::parse($bulan . '-01')->startOfMonth();
             $endDate = Carbon::parse($bulan . '-01')->endOfMonth();

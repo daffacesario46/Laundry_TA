@@ -73,7 +73,7 @@
                                 <th>Nama Layanan</th>
                                 <th>Jenis Cucian</th>
                                 <th>Durasi</th>
-                                <th>Deskripsi</th>
+                                <th>Harga</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -89,8 +89,8 @@
                                 </td>
                                 <td>{{ $item->durasi_hari }} hari</td>
                                 <td>
-                                    @if($item->deskripsi)
-                                        {{ Str::limit($item->deskripsi, 50) }}
+                                    @if($item->harga)
+                                        {{ $item->getFormattedHarga() }}
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
