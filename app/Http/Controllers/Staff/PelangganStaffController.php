@@ -301,4 +301,49 @@ class PelangganStaffController extends Controller
                 ->with('error', 'Gagal menghapus pelanggan: ' . $e->getMessage());
         }
     }
+
+        /**
+     * Store pelanggan via AJAX untuk form order
+     */
+    public function storeAjax(Request $request)
+    {
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'no_telp' => 'required|string|max:20|unique:pelanggan,no_telp',
+            'alamat' => 'required|string|max:500',
+        ], [
+            'nama.required' => 'Nama harus diisi',
+            'no_telp.required' => 'No telepon harus diisi',
+            'no_telp.unique' => 'No telepon sudah terdaftar',
+            'alamat.required' => 'Alamat harus diisi',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $pelanggan = Pelanggan::create([
+                'nama' => $request->nama,
+                'no_telp' => $request->no_telp,
+                'alamat' => $request->alamat,
+                'status' => 'aktif',
+                'users_id' => null, // Pelanggan offline tidak punya akun
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pelanggan berhasil ditambahkan',
+                'pelanggan' => $pelanggan
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Store Pelanggan Ajax Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan pelanggan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -74,9 +74,9 @@ class CucianController extends Controller
 }
 
     /**
-     * ✅ UPDATED: Store new cucian - OFFLINE ONLY
-     */
-    public function store(Request $request)
+ * ✅ UPDATED: Store new cucian - OFFLINE ONLY
+ */
+public function store(Request $request)
 {
     $jenis_order = 'offline';
     
@@ -88,13 +88,13 @@ class CucianController extends Controller
         'jenis_cucian.required' => 'Jenis cucian wajib dipilih',
         'metode_cuci.required' => 'Metode cuci wajib dipilih',
     ]);
-    
+
     $jenis_cucian = $request->jenis_cucian;
     $metode_cuci = $request->metode_cuci;
-    
+
     // ✅ Express multiplier
     $expressMultiplier = $metode_cuci === 'express' ? 1.5 : 1;
-    
+
     // Validation berbeda untuk kiloan vs satuan
     if ($jenis_cucian === 'kiloan') {
         $validated = $request->validate([
@@ -120,8 +120,17 @@ class CucianController extends Controller
 
     DB::beginTransaction();
     try {
-        $layanan = Layanan::find($request->layanan_id);
-        $estimasi = Carbon::now()->addDays($layanan->durasi_hari ?? 3);
+        $layanan = Layanan::findOrFail($request->layanan_id);
+        
+        // ✅ HITUNG ESTIMASI BERDASARKAN METODE CUCI
+        $tglOrder = Carbon::now();
+        if ($metode_cuci === 'express') {
+            // Express: +24 jam (jam ke jam)
+            $estimasi = $tglOrder->copy()->addHours(24);
+        } else {
+            // Normal: +X hari (dari layanan)
+            $estimasi = $tglOrder->copy()->addDays($layanan->durasi_hari ?? 3);
+        }
 
         // HANDLE KILOAN OFFLINE
         if ($jenis_cucian === 'kiloan') {
@@ -143,9 +152,9 @@ class CucianController extends Controller
                 'jenis_cucian' => 'kiloan',
                 'jenis_order' => $jenis_order,
                 'jenis_ambil' => $request->jenis_ambil,
-                'metode_cuci' => $metode_cuci, // ✅ TAMBAHAN
-                'tgl_order' => Carbon::now(),
-                'estimasi' => $estimasi,
+                'metode_cuci' => $metode_cuci,
+                'tgl_order' => $tglOrder,
+                'estimasi' => $estimasi, // ✅ Express = +24 jam, Normal = +X hari
                 'total_item' => 1,
                 'total_berat' => $beratKg,
                 'total_harga' => $totalHarga,
@@ -162,13 +171,14 @@ class CucianController extends Controller
                 'harga_kiloan' => $listHargaKiloan->harga_kiloan,
                 'deskripsi' => 'Cucian kiloan' . ($metode_cuci === 'express' ? ' (Express +50%)' : '')
             ]);
+            
         } else {
             // HANDLE SATUAN OFFLINE
             $subtotal = 0;
             $totalItem = 0;
 
             foreach ($request->items as $item) {
-                $listHarga = ListHarga::find($item['list_harga_id']);
+                $listHarga = ListHarga::findOrFail($item['list_harga_id']);
                 $jumlah = $item['jumlah'] ?? 1;
                 $subtotal += $jumlah * $listHarga->harga_satuan;
                 $totalItem += $jumlah;
@@ -184,9 +194,9 @@ class CucianController extends Controller
                 'jenis_cucian' => 'satuan',
                 'jenis_order' => $jenis_order,
                 'jenis_ambil' => $request->jenis_ambil,
-                'metode_cuci' => $metode_cuci, // ✅ TAMBAHAN
-                'tgl_order' => Carbon::now(),
-                'estimasi' => $estimasi,
+                'metode_cuci' => $metode_cuci,
+                'tgl_order' => $tglOrder,
+                'estimasi' => $estimasi, // ✅ Express = +24 jam, Normal = +X hari
                 'total_item' => $totalItem,
                 'total_berat' => null,
                 'total_harga' => $totalHarga,
@@ -196,7 +206,7 @@ class CucianController extends Controller
 
             // Buat detail cucian
             foreach ($request->items as $item) {
-                $listHarga = ListHarga::find($item['list_harga_id']);
+                $listHarga = ListHarga::findOrFail($item['list_harga_id']);
                 $jumlah = $item['jumlah'] ?? 1;
 
                 CucianDetail::create([
@@ -221,8 +231,14 @@ class CucianController extends Controller
 
         DB::commit();
 
+        // ✅ Pesan sukses dengan info express
+        $successMessage = 'Data cucian berhasil ditambahkan! No Order: ' . $cucian->getNoOrder();
+        if ($metode_cuci === 'express') {
+            $successMessage .= ' - Express Service (selesai dalam 24 jam, harga +50%)';
+        }
+
         return redirect()->route('staff.cucian.show', $cucian->cucian_id)
-            ->with('success', 'Data cucian berhasil ditambahkan! No Order: ' . $cucian->getNoOrder());
+            ->with('success', $successMessage);
 
     } catch (\Exception $e) {
         DB::rollback();

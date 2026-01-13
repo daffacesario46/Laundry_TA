@@ -85,26 +85,26 @@ class OrderController extends Controller
 
     /**
      * Store new order
-     * ✅ UPDATED: Support jenis_cucian (kiloan/satuan)
+     * ✅ UPDATED: Support jenis_cucian (kiloan/satuan) + EXPRESS
      */
     public function store(Request $request)
     {
         $pelanggan = $this->getPelanggan();
-        
         if (!$pelanggan) {
             return redirect()->route('pelanggan.dashboard')
                 ->with('error', 'Data pelanggan tidak ditemukan!');
         }
-        
+
         // ✅ VALIDASI BERBEDA UNTUK KILOAN VS SATUAN
         $rules = [
             'layanan_id' => 'required|exists:layanan,layanan_id',
             'jenis_cucian' => 'required|in:kiloan,satuan',
             'jenis_ambil' => 'required|in:diantar,ambil_sendiri',
+            'metode_cuci' => 'nullable|in:normal,express', // ✅ TAMBAHAN
             'metode_bayar' => 'required|in:cash,transfer,e-wallet',
             'catatan' => 'nullable|string|max:500',
         ];
-        
+
         // Jika SATUAN, items wajib ada
         if ($request->jenis_cucian === 'satuan') {
             $rules['items'] = 'required|array|min:1';
@@ -112,7 +112,7 @@ class OrderController extends Controller
             $rules['items.*.jumlah'] = 'required|integer|min:1';
             $rules['items.*.deskripsi'] = 'nullable|string|max:255';
         }
-        
+
         $validated = $request->validate($rules, [
             'layanan_id.required' => 'Layanan harus dipilih',
             'jenis_cucian.required' => 'Jenis cucian harus dipilih',
@@ -120,35 +120,51 @@ class OrderController extends Controller
             'items.required' => 'Minimal harus ada 1 item untuk cucian satuan',
             'metode_bayar.required' => 'Metode pembayaran harus dipilih'
         ]);
-        
+
         DB::beginTransaction();
         try {
             $layanan = Layanan::findOrFail($request->layanan_id);
-            $estimasi = Carbon::now()->addDays($layanan->durasi_hari ?? 3);
             
+            // ✅ HITUNG ESTIMASI BERDASARKAN METODE CUCI
+            $tglOrder = Carbon::now();
+            $metodeCuci = $request->metode_cuci ?? 'normal'; // Default normal
+            
+            if ($metodeCuci === 'express') {
+                // Express: +24 jam (jam ke jam)
+                $estimasi = $tglOrder->copy()->addHours(24);
+            } else {
+                // Normal: +X hari (dari layanan)
+                $estimasi = $tglOrder->copy()->addDays($layanan->durasi_hari ?? 3);
+            }
+
+            // ✅ Express multiplier untuk harga
+            $expressMultiplier = ($metodeCuci === 'express') ? 1.5 : 1.0;
+
             // ✅ LOGIC BERBEDA UNTUK KILOAN VS SATUAN
             if ($request->jenis_cucian === 'kiloan') {
                 // KILOAN: Berat belum ada, harga = 0, akan diinput staff nanti
                 $cucian = Cucian::create([
                     'pelanggan_id' => $pelanggan->pelanggan_id,
                     'layanan_id' => $request->layanan_id,
+                    'jenis_cucian' => 'kiloan',
                     'jenis_order' => 'online',
                     'jenis_ambil' => $request->jenis_ambil,
-                    'tgl_order' => Carbon::now(),
-                    'estimasi' => $estimasi,
+                    'metode_cuci' => $metodeCuci, // ✅ TAMBAHAN
+                    'tgl_order' => $tglOrder,
+                    'estimasi' => $estimasi, // ✅ Express = +24 jam, Normal = +X hari
                     'total_item' => 0,
                     'total_berat' => null, // ✅ Akan diisi staff
-                    'total_harga' => 0,    // ✅ Akan dihitung setelah berat diinput
+                    'total_harga' => 0, // ✅ Akan dihitung setelah berat diinput
                     'status_cucian' => 'menunggu',
                     'catatan' => $request->catatan,
                 ]);
-                
+
                 // Buat placeholder detail untuk input berat nanti
                 $listHargaKiloan = ListHarga::where('harga_kiloan', '>', 0)->first();
                 if (!$listHargaKiloan) {
                     throw new \Exception('Tidak ada harga kiloan yang tersedia di sistem');
                 }
-                
+
                 CucianDetail::create([
                     'cucian_id' => $cucian->cucian_id,
                     'list_harga_id' => $listHargaKiloan->list_harga_id,
@@ -156,36 +172,39 @@ class OrderController extends Controller
                     'berat_kg' => null, // ✅ Akan diisi staff
                     'harga_satuan' => null,
                     'harga_kiloan' => $listHargaKiloan->harga_kiloan,
-                    'deskripsi' => 'Cucian kiloan (berat akan diinput setelah penjemputan)',
+                    'deskripsi' => 'Cucian kiloan (berat akan diinput setelah penjemputan)' . 
+                                ($metodeCuci === 'express' ? ' - Express +50%' : ''),
                 ]);
-                
+
                 $totalHarga = 0; // Akan dihitung setelah berat diinput
                 
             } else {
                 // SATUAN: Hitung langsung dari items
-                $totalHarga = 0;
+                $subtotal = 0;
                 $totalItem = count($request->items);
-                
+
                 // Buat order
                 $cucian = Cucian::create([
                     'pelanggan_id' => $pelanggan->pelanggan_id,
                     'layanan_id' => $request->layanan_id,
+                    'jenis_cucian' => 'satuan',
                     'jenis_order' => 'online',
                     'jenis_ambil' => $request->jenis_ambil,
-                    'tgl_order' => Carbon::now(),
-                    'estimasi' => $estimasi,
+                    'metode_cuci' => $metodeCuci, // ✅ TAMBAHAN
+                    'tgl_order' => $tglOrder,
+                    'estimasi' => $estimasi, // ✅ Express = +24 jam, Normal = +X hari
                     'total_item' => $totalItem,
                     'total_berat' => null,
                     'total_harga' => 0, // Akan diupdate setelah loop
                     'status_cucian' => 'menunggu',
                     'catatan' => $request->catatan,
                 ]);
-                
+
                 // Buat detail items
                 foreach ($request->items as $item) {
                     $listHarga = ListHarga::findOrFail($item['list_harga_id']);
                     
-                    $detail = CucianDetail::create([
+                    CucianDetail::create([
                         'cucian_id' => $cucian->cucian_id,
                         'list_harga_id' => $item['list_harga_id'],
                         'jumlah' => $item['jumlah'],
@@ -194,15 +213,17 @@ class OrderController extends Controller
                         'harga_kiloan' => null,
                         'deskripsi' => $item['deskripsi'] ?? null,
                     ]);
-                    
-                    $subtotal = $detail->jumlah * $listHarga->harga_satuan;
-                    $totalHarga += $subtotal;
+
+                    $subtotal += $item['jumlah'] * $listHarga->harga_satuan;
                 }
+
+                // ✅ Apply express markup
+                $totalHarga = $subtotal * $expressMultiplier;
                 
                 // Update total harga
                 $cucian->update(['total_harga' => $totalHarga]);
             }
-            
+
             // Buat Pembayaran
             Pembayaran::create([
                 'cucian_id' => $cucian->cucian_id,
@@ -211,26 +232,30 @@ class OrderController extends Controller
                 'status_bayar' => 'belum',
                 'tgl_bayar' => null,
             ]);
-            
-           // Buat Penjemputan (karena online)
-                Penjemputan::create([
+
+            // Buat Penjemputan (karena online)
+            Penjemputan::create([
                 'cucian_id' => $cucian->cucian_id,
-                'tgl_order' => Carbon::now()->addDay(), // ✅ FIXED: tgl_order (bukan tgl_jemput)
+                'tgl_order' => Carbon::now()->addDay(),
                 'alamat_jemput' => $pelanggan->alamat,
-                'status' => 'menunggu', // ✅ FIXED: menunggu (bukan pending)
+                'status' => 'menunggu',
             ]);
-            
+
             DB::commit();
-            
+
+            // ✅ Pesan sukses dengan info express
             $message = 'Order berhasil dibuat! No Order: ' . $cucian->getNoOrder();
+            if ($metodeCuci === 'express') {
+                $message .= ' - Express Service (24 jam, harga +50%)';
+            }
             if ($request->jenis_cucian === 'kiloan') {
                 $message .= ' - Berat cucian akan diinput oleh staff setelah penjemputan.';
             }
-            
+
             return redirect()
                 ->route('pelanggan.order.detail', $cucian->cucian_id)
                 ->with('success', $message);
-                
+
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Order Store Error: ' . $e->getMessage());

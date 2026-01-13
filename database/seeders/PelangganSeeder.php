@@ -10,10 +10,10 @@ class PelangganSeeder extends Seeder
     public function run(): void
     {
         $pelanggan = [
-            // Pelanggan Online (Member) - yang punya akun users
+            // Pelanggan Online (punya akun users)
             [
                 'users_id' => 6, // Andi Wijaya
-                'kategori_pelanggan' => 'member',
+                'kategori_pelanggan' => 'online',
                 'nama' => 'Andi Wijaya',
                 'no_telp' => '081234567895',
                 'no_wa' => '081234567895',
@@ -23,7 +23,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => 7, // Dewi Lestari
-                'kategori_pelanggan' => 'member',
+                'kategori_pelanggan' => 'online',
                 'nama' => 'Dewi Lestari',
                 'no_telp' => '081234567896',
                 'no_wa' => '081234567896',
@@ -33,7 +33,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => 8, // Rudi Hartono
-                'kategori_pelanggan' => 'member',
+                'kategori_pelanggan' => 'online',
                 'nama' => 'Rudi Hartono',
                 'no_telp' => '081234567897',
                 'no_wa' => '081234567897',
@@ -43,7 +43,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => 9, // Sari Indah
-                'kategori_pelanggan' => 'member',
+                'kategori_pelanggan' => 'online',
                 'nama' => 'Sari Indah',
                 'no_telp' => '081234567898',
                 'no_wa' => '081234567898',
@@ -53,7 +53,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => 10, // Bambang Sutopo
-                'kategori_pelanggan' => 'member',
+                'kategori_pelanggan' => 'online',
                 'nama' => 'Bambang Sutopo',
                 'no_telp' => '081234567899',
                 'no_wa' => '081234567899',
@@ -62,10 +62,10 @@ class PelangganSeeder extends Seeder
                 'status' => 'aktif',
             ],
             
-            // Pelanggan Offline (Walk-in) - tidak punya akun users
+            // Pelanggan Offline (Walk-in Customer - tidak punya akun users)
             [
                 'users_id' => null,
-                'kategori_pelanggan' => 'reguler',
+                'kategori_pelanggan' => 'offline',
                 'nama' => 'Ibu Susi',
                 'no_telp' => '081298765432',
                 'no_wa' => '081298765432',
@@ -75,7 +75,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => null,
-                'kategori_pelanggan' => 'reguler',
+                'kategori_pelanggan' => 'offline',
                 'nama' => 'Pak Agus',
                 'no_telp' => '081298765433',
                 'no_wa' => '081298765433',
@@ -85,7 +85,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => null,
-                'kategori_pelanggan' => 'reguler',
+                'kategori_pelanggan' => 'offline',
                 'nama' => 'Ibu Ratna',
                 'no_telp' => '081298765434',
                 'no_wa' => '081298765434',
@@ -95,7 +95,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => null,
-                'kategori_pelanggan' => 'reguler',
+                'kategori_pelanggan' => 'offline',
                 'nama' => 'Pak Dedi',
                 'no_telp' => '081298765435',
                 'no_wa' => '081298765435',
@@ -105,7 +105,7 @@ class PelangganSeeder extends Seeder
             ],
             [
                 'users_id' => null,
-                'kategori_pelanggan' => 'reguler',
+                'kategori_pelanggan' => 'offline',
                 'nama' => 'Ibu Lina',
                 'no_telp' => '081298765436',
                 'no_wa' => '081298765436',
@@ -119,6 +119,6 @@ class PelangganSeeder extends Seeder
             DB::table('pelanggan')->insert($data);
         }
 
-        $this->command->info('✓ Pelanggan seeder completed: 10 pelanggan created (5 member online, 5 reguler offline)');
+        $this->command->info('✓ Pelanggan seeder completed: 10 pelanggan created (5 online, 5 offline)');
     }
 }

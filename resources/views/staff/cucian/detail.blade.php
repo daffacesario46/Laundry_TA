@@ -469,10 +469,12 @@
                                     class="btn btn-warning btn-lg">
                                         <i class="material-icons md-payments"></i> Cash/Transfer
                                     </a>
+
                                     <a href="{{ route('staff.pembayaran.midtrans', $cucian->pembayaran->pembayaran_id ?? $cucian->cucian_id) }}" 
                                     class="btn btn-success btn-lg">
                                         <i class="material-icons md-credit_card"></i> Midtrans
                                     </a>
+
                                 </div>
                             
                             @elseif($cucian->status_cucian === 'menunggu')

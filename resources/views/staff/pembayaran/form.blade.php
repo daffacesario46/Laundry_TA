@@ -29,8 +29,7 @@
                             <label class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
                             <select class="form-select @error('metode_bayar') is-invalid @enderror" name="metode_bayar" required>
                                 <option value="">Pilih Metode</option>
-                                <option value="cash" {{ old('metode_bayar') == 'cash' ? 'selected' : '' }}>Cash</option>
-                                <option value="transfer" {{ old('metode_bayar') == 'transfer' ? 'selected' : '' }}>Transfer</option>
+                                <option value="cash">Cash</option>
                             </select>
                             @error('metode_bayar')
                                 <div class="invalid-feedback">{{ $message }}</div>

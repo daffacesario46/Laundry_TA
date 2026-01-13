@@ -182,6 +182,7 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::put('/{id}', [PelangganStaffController::class, 'update'])->name('update');
         Route::delete('/{id}', [PelangganStaffController::class, 'destroy'])->name('destroy');
         Route::delete('/{id}/delete-foto', [PelangganStaffController::class, 'deleteFoto'])->name('delete-foto');
+        Route::post('/store-ajax', [PelangganStaffController::class, 'storeAjax'])->name('store-ajax');
     });
     
     // Status Cucian
@@ -191,22 +192,28 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         Route::post('/{id}/update-status', [StatusCucianController::class, 'updateStatus'])->name('update-status');
     });
 
-    // PEMBAYARAN MANAGEMENT
-    Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
-        Route::get('/', [PembayaranController::class, 'index'])->name('index');
-        Route::get('/{id}', [PembayaranController::class, 'show'])->name('show');
-        
-        // Process payment for offline customer
-        Route::get('/cucian/{cucian_id}/bayar', [PembayaranController::class, 'showPaymentForm'])->name('form');
-        Route::post('/cucian/{cucian_id}/proses', [PembayaranController::class, 'processPayment'])->name('process');
-        
-        // Validate transfer payment for online customer
-        Route::get('/{id}/validate', [PembayaranController::class, 'showValidateForm'])->name('validate-form');
-        Route::put('/{id}/validate', [PembayaranController::class, 'validatePayment'])->name('validate');
-        
-        // Delete/Cancel payment
-        Route::delete('/{id}', [PembayaranController::class, 'destroy'])->name('destroy');
-    });
+// PEMBAYARAN MANAGEMENT
+Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+    Route::get('/', [PembayaranController::class, 'index'])->name('index');
+    Route::get('/{id}', [PembayaranController::class, 'show'])->name('show');
+    
+    // Process payment for offline customer
+    Route::get('/cucian/{cucian_id}/bayar', [PembayaranController::class, 'showPaymentForm'])->name('form');
+    Route::post('/cucian/{cucian_id}/proses', [PembayaranController::class, 'processPayment'])->name('process');
+    
+    // Validate transfer payment for online customer
+    Route::get('/{id}/validate', [PembayaranController::class, 'showValidateForm'])->name('validate-form');
+    Route::put('/{id}/validate', [PembayaranController::class, 'validatePayment'])->name('validate');
+    
+    // Delete/Cancel payment
+    Route::delete('/{id}', [PembayaranController::class, 'destroy'])->name('destroy');
+    
+    // ✅ MIDTRANS ROUTES - TAMBAHKAN DI SINI (SEBELUM TUTUP KURUNG)
+    Route::post('/midtrans/create/{cucian_id}', [PembayaranController::class, 'createMidtransPayment'])
+        ->name('midtrans.create');
+    Route::get('/midtrans/{id}', [PembayaranController::class, 'showMidtransPayment'])
+        ->name('midtrans');
+});
 
     // PENJEMPUTAN MANAGEMENT
     Route::prefix('penjemputan')->name('penjemputan.')->group(function () {
@@ -339,11 +346,3 @@ Route::prefix('pelanggan')->name('pelanggan.')->middleware(['auth', 'role:pelang
     })->name('home');
 }); // TUTUP PELANGGAN ROUTES
     
-// Midtrans Payment Routes
-Route::post('/pembayaran/midtrans/create/{cucian_id}', [PembayaranController::class, 'createMidtransPayment'])
-    ->name('staff.pembayaran.midtrans.create');
-
-Route::get('/pembayaran/midtrans/{id}', [PembayaranController::class, 'showMidtransPayment'])
-    ->name('staff.pembayaran.midtrans');
-
-// Route::post('/payments/midtrans-notification', [PembayaranController::class, 'handleMidtransCallback']);

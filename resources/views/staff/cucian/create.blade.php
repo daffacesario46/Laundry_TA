@@ -30,10 +30,15 @@
         
         <div class="row">
             <div class="col-lg-8">
+
                 <!-- Info Pelanggan -->
                 <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Informasi Pelanggan</h4>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Informasi Pelanggan</h4>
+                        {{-- ✅ BUTTON TAMBAH PELANGGAN --}}
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahPelanggan">
+                            <i class="material-icons md-add"></i> Tambah Pelanggan
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -43,8 +48,8 @@
                                 <option value="">-- Pilih Pelanggan --</option>
                                 @foreach($pelanggan as $p)
                                 <option value="{{ $p->pelanggan_id }}" 
-                                        data-nama="{{ $p->nama }}"
-                                        data-telp="{{ $p->no_telp }}"
+                                        data-nama="{{ $p->nama }}" 
+                                        data-telp="{{ $p->no_telp }}" 
                                         data-alamat="{{ $p->alamat }}"
                                         {{ old('pelanggan_id') == $p->pelanggan_id ? 'selected' : '' }}>
                                     {{ $p->nama }} - {{ $p->no_telp }}
@@ -56,6 +61,7 @@
                             @enderror
                         </div>
 
+                        {{-- Display Info --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">No Telepon</label>
@@ -368,6 +374,63 @@
             </div>
         </div>
     </form>
+    {{-- ✅ MODAL TAMBAH PELANGGAN --}}
+        <div class="modal fade" id="modalTambahPelanggan" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="formTambahPelanggan">
+                        @csrf
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="material-icons md-person_add"></i>
+                                Tambah Pelanggan Baru
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="material-icons md-info"></i>
+                                <small>Pelanggan baru akan langsung ditambahkan ke sistem dan dapat dipilih untuk order ini.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="nama_pelanggan" class="form-label">
+                                    Nama Lengkap <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="nama_pelanggan" name="nama" required>
+                                <div class="invalid-feedback" id="error-nama"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="no_telp_pelanggan" class="form-label">
+                                    No Telepon <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="no_telp_pelanggan" name="no_telp" required 
+                                    placeholder="08xxxxxxxxxx">
+                                <div class="invalid-feedback" id="error-no_telp"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="alamat_pelanggan" class="form-label">
+                                    Alamat <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="alamat_pelanggan" name="alamat" rows="3" required 
+                                        placeholder="Masukkan alamat lengkap"></textarea>
+                                <div class="invalid-feedback" id="error-alamat"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="material-icons md-close"></i> Batal
+                            </button>
+                            <button type="submit" class="btn btn-success" id="btnSimpanPelanggan">
+                                <i class="material-icons md-save"></i> Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 </section>
 
 <script>
@@ -657,6 +720,85 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('display_alamat').value = option.dataset.alamat || '-';
     }
 });
+
+document.getElementById('formTambahPelanggan')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('btnSimpanPelanggan');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    
+    // Clear previous errors
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    const formData = new FormData(this);
+    
+    fetch('{{ route("staff.pelanggan.store-ajax") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Tambahkan pelanggan baru ke dropdown
+            const select = document.getElementById('pelanggan_id');
+            const option = document.createElement('option');
+            option.value = data.pelanggan.pelanggan_id;
+            option.textContent = `${data.pelanggan.nama} - ${data.pelanggan.no_telp}`;
+            option.setAttribute('data-nama', data.pelanggan.nama);
+            option.setAttribute('data-telp', data.pelanggan.no_telp);
+            option.setAttribute('data-alamat', data.pelanggan.alamat);
+            option.selected = true;
+            select.appendChild(option);
+            
+            // Update display fields
+            document.getElementById('display_telp').value = data.pelanggan.no_telp;
+            document.getElementById('display_alamat').value = data.pelanggan.alamat;
+            
+            // Close modal dan reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalTambahPelanggan'));
+            modal.hide();
+            this.reset();
+            
+            // Show toast/alert
+            showToast('success', 'Pelanggan berhasil ditambahkan!');
+        } else {
+            // Show validation errors
+            if (data.errors) {
+                for (let field in data.errors) {
+                    const input = document.querySelector(`[name="${field}"]`);
+                    const error = document.getElementById(`error-${field}`);
+                    if (input && error) {
+                        input.classList.add('is-invalid');
+                        error.textContent = data.errors[field][0];
+                    }
+                }
+            } else {
+                alert('Error: ' + (data.message || 'Gagal menambahkan pelanggan'));
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menambahkan pelanggan');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+});
+
+// Helper function untuk toast notification (opsional)
+function showToast(type, message) {
+    // Bisa pakai SweetAlert2, Toastr, atau alert biasa
+    alert(message);
+}
 </script>
 
 @endsection

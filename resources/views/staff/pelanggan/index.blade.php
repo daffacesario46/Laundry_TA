@@ -28,7 +28,7 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-width: 160px;
+    min-width: 180px;
     z-index: 1000;
     padding: 8px 0;
     margin-top: 4px;
@@ -59,17 +59,46 @@
 .dropdown-item-custom.text-danger {
     color: #dc3545 !important;
 }
+
+.dropdown-item-custom.text-success {
+    color: #28a745 !important;
+}
+
+.dropdown-item-custom.text-primary {
+    color: #007bff !important;
+}
+
+/* Badge untuk No Order dengan warna */
+.badge-order-online {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.badge-order-offline {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
 </style>
 
 <section class="content-main">
     <div class="content-header">
         <div>
-            <h2 class="content-title card-title">Data Pelanggan</h2>
-            <p>Kelola data pelanggan laundry</p>
+            <h2 class="content-title card-title">Data Cucian</h2>
+            <p>Kelola data cucian pelanggan</p>
         </div>
         <div>
-            <a href="{{ route('staff.pelanggan.create') }}" class="btn btn-primary">
-                <i class="material-icons md-add"></i> Tambah Pelanggan
+            <a href="{{ route('staff.cucian.create') }}" class="btn btn-primary">
+                <i class="material-icons md-add"></i> Tambah Cucian
             </a>
         </div>
     </div>
@@ -91,26 +120,28 @@
 
     <div class="card mb-4">
         <header class="card-header">
-            <form action="{{ route('staff.pelanggan.index') }}" method="GET">
+            <form action="{{ route('staff.cucian.index') }}" method="GET">
                 <div class="row gx-3">
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-3 col-md-6 mb-3">
                         <input type="text" name="search" 
-                               placeholder="Cari nama, telepon, atau WA..." 
+                               placeholder="Cari no order atau nama pelanggan..." 
                                class="form-control" 
                                value="{{ request('search') }}">
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
-                        <select class="form-select" name="kategori">
-                            <option value="">Semua Kategori</option>
-                            <option value="umum" {{ request('kategori') == 'umum' ? 'selected' : '' }}>Umum</option>
-                            <option value="member" {{ request('kategori') == 'member' ? 'selected' : '' }}>Member</option>
+                        <select class="form-select" name="jenis_order">
+                            <option value="">Semua Jenis</option>
+                            <option value="online" {{ request('jenis_order') == 'online' ? 'selected' : '' }}>Online</option>
+                            <option value="offline" {{ request('jenis_order') == 'offline' ? 'selected' : '' }}>Offline</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
                         <select class="form-select" name="status">
                             <option value="">Semua Status</option>
-                            <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
-                            <option value="nonaktif" {{ request('status') == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
+                            <option value="menunggu" {{ request('status') == 'menunggu' ? 'selected' : '' }}>Menunggu</option>
+                            <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>Diproses</option>
+                            <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                            <option value="diambil" {{ request('status') == 'diambil' ? 'selected' : '' }}>Diambil</option>
                         </select>
                     </div>
                     <div class="col-lg-2 col-md-3 mb-3">
@@ -125,15 +156,22 @@
                             <i class="material-icons md-search"></i> Cari
                         </button>
                     </div>
+                    @if(request()->anyFilled(['search', 'status', 'jenis_order', 'paginate']))
+                        <div class="col-lg-1 col-md-3 mb-3">
+                            <a href="{{ route('staff.cucian.index') }}" class="btn btn-light w-100">
+                                <i class="material-icons md-refresh"></i>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </form>
         </header>
 
         <div class="card-body">
-            @if($pelanggan->isEmpty())
+            @if($cucian->isEmpty())
                 <div class="alert alert-info text-center">
                     <i class="material-icons md-info"></i>
-                    Tidak ada data pelanggan
+                    Tidak ada data cucian
                     @if(request()->filled('search'))
                         untuk pencarian "<strong>{{ request()->search }}</strong>"
                     @endif
@@ -143,106 +181,99 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Foto</th>
-                                <th>Nama</th>
-                                <th>Kontak</th>
-                                <th>Alamat</th>
-                                <th>Kategori</th>
+                                <th>No Order</th>
+                                <th>Pelanggan</th>
+                                <th>Layanan</th>
+                                <th>Total Item</th>
+                                <th>Berat</th>
+                                <th>Total Harga</th>
                                 <th>Status</th>
-                                <th>Terdaftar</th>
+                                <th>Tanggal Order</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($pelanggan as $item)
+                            @foreach($cucian as $item)
                             <tr>
                                 <td>
-                                    @if($item->foto)
-                                        <img src="{{ Storage::url($item->foto) }}" 
-                                             class="rounded-circle" 
-                                             width="40" 
-                                             height="40" 
-                                             style="object-fit: cover;"
-                                             alt="{{ $item->nama }}">
-                                    @else
-                                        <div class="d-flex align-items-center justify-content-center bg-secondary text-white rounded-circle" 
-                                             style="width: 40px; height: 40px;">
-                                            <i class="material-icons">person</i>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <strong>{{ $item->nama }}</strong>
-                                    @if($item->user)
-                                        <br><small class="text-muted">
-                                            <i class="material-icons md-email" style="font-size: 12px;"></i> 
-                                            {{ $item->user->email }}
-                                        </small>
-                                    @endif
-                                </td>
-                                <td>
-                                    <i class="material-icons md-phone small"></i> {{ $item->no_telp }}<br>
-                                    @if($item->no_wa)
-                                        <i class="material-icons md-chat small text-success"></i> {{ $item->no_wa }}
-                                    @endif
-                                </td>
-                                <td>{{ Str::limit($item->alamat, 30) }}</td>
-                                <td>
-                                    @if($item->kategori_pelanggan == 'member')
-                                        <span class="badge bg-success">Member</span>
-                                    @else
-                                        <span class="badge bg-secondary">Umum</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge {{ $item->status == 'aktif' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
+                                    <span class="{{ $item->jenis_order == 'online' ? 'badge-order-online' : 'badge-order-offline' }}">
+                                        {{ $item->getNoOrder() }}
                                     </span>
                                 </td>
-                                <td>{{ $item->created_at->format('d M Y') }}</td>
+                                <td>
+                                    <b>{{ $item->pelanggan->nama ?? 'N/A' }}</b><br>
+                                    <small class="text-muted">{{ $item->pelanggan->no_telp ?? '-' }}</small>
+                                </td>
+                                <td>{{ $item->layanan->nama_layanan ?? '-' }}</td>
+                                <td>{{ $item->total_item }} item</td>
+                                <td>{{ $item->total_berat ? number_format($item->total_berat, 1) . ' Kg' : '-' }}</td>
+                                <td>{{ $item->getFormattedTotalHarga() }}</td>
+                                <td>
+                                    <span class="badge rounded-pill {{ $item->getStatusBadge() }}">
+                                        {{ $item->getStatusLabel() }}
+                                    </span>
+                                </td>
+                                <td>{{ $item->tgl_order->format('d/m/Y H:i') }}</td>
                                 <td class="text-end">
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-light dropdown-toggle-custom" 
                                                 type="button" 
-                                                onclick="toggleDropdown({{ $item->pelanggan_id }})"
-                                                id="dropdownMenu{{ $item->pelanggan_id }}">
+                                                onclick="toggleDropdown({{ $item->cucian_id }})"
+                                                id="dropdownMenu{{ $item->cucian_id }}">
                                             <i class="material-icons md-more_vert"></i>
                                         </button>
-                                        <div class="dropdown-menu-custom" id="dropdown{{ $item->pelanggan_id }}">
-                                            <a href="{{ route('staff.pelanggan.edit', $item->pelanggan_id) }}" class="dropdown-item-custom">
+                                        <div class="dropdown-menu-custom" id="dropdown{{ $item->cucian_id }}">
+                                            <a href="{{ route('staff.cucian.show', $item->cucian_id) }}" 
+                                               class="dropdown-item-custom">
+                                                <i class="material-icons md-visibility text-primary"></i> Lihat Detail
+                                            </a>
+                                            <a href="{{ route('staff.cucian.edit', $item->cucian_id) }}" 
+                                               class="dropdown-item-custom">
                                                 <i class="material-icons md-edit text-warning"></i> Edit
                                             </a>
-                                            <a href="#" 
-                                               onclick="toggleStatus({{ $item->pelanggan_id }}, '{{ $item->status }}')" 
-                                               class="dropdown-item-custom">
-                                                <i class="material-icons md-check_circle text-success"></i> 
-                                                {{ $item->status == 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-                                            </a>
-                                            <a href="#" 
-                                               onclick="confirmDelete({{ $item->pelanggan_id }}, '{{ addslashes($item->nama) }}')" 
-                                               class="dropdown-item-custom text-danger">
-                                                <i class="material-icons md-delete text-danger"></i> Hapus
-                                            </a>
+                                            
+                                            @php
+                                                $nextStatus = [
+                                                    'menunggu' => ['status' => 'diproses', 'label' => 'Proses Cucian', 'icon' => 'hourglass_empty', 'color' => 'text-info'],
+                                                    'diproses' => ['status' => 'selesai', 'label' => 'Tandai Selesai', 'icon' => 'check_circle', 'color' => 'text-success'],
+                                                    'selesai' => ['status' => 'diambil', 'label' => 'Tandai Diambil', 'icon' => 'local_shipping', 'color' => 'text-primary'],
+                                                ];
+                                                $current = $item->status_cucian;
+                                            @endphp
+                                            
+                                            @if(isset($nextStatus[$current]))
+                                                <a href="#" 
+                                                   onclick="updateStatus({{ $item->cucian_id }}, '{{ $nextStatus[$current]['status'] }}', '{{ $item->getNoOrder() }}')" 
+                                                   class="dropdown-item-custom {{ $nextStatus[$current]['color'] }}">
+                                                    <i class="material-icons md-{{ $nextStatus[$current]['icon'] }} {{ $nextStatus[$current]['color'] }}"></i> 
+                                                    {{ $nextStatus[$current]['label'] }}
+                                                </a>
+                                            @endif
+                                            
+                                            @if($item->status_cucian == 'menunggu')
+                                                <a href="#" 
+                                                   onclick="confirmDelete({{ $item->cucian_id }}, '{{ addslashes($item->getNoOrder()) }}')" 
+                                                   class="dropdown-item-custom text-danger">
+                                                    <i class="material-icons md-delete text-danger"></i> Hapus
+                                                </a>
+                                            @endif
                                         </div>
                                     </div>
 
-                                    <form id="delete-form-{{ $item->pelanggan_id }}" 
-                                          action="{{ route('staff.pelanggan.destroy', $item->pelanggan_id) }}" 
+                                    <!-- Form Delete -->
+                                    <form id="delete-form-{{ $item->cucian_id }}" 
+                                          action="{{ route('staff.cucian.destroy', $item->cucian_id) }}" 
                                           method="POST" style="display: none;">
                                         @csrf
                                         @method('DELETE')
                                     </form>
 
-                                    <form id="toggle-form-{{ $item->pelanggan_id }}" 
-                                          action="{{ route('staff.pelanggan.update', $item->pelanggan_id) }}" 
+                                    <!-- Form Update Status -->
+                                    <form id="status-form-{{ $item->cucian_id }}" 
+                                          action="{{ route('staff.status-cucian.update-status', $item->cucian_id) }}" 
                                           method="POST" style="display: none;">
                                         @csrf
-                                        @method('PUT')
-                                        <input type="hidden" name="nama" value="{{ $item->nama }}">
-                                        <input type="hidden" name="no_telp" value="{{ $item->no_telp }}">
-                                        <input type="hidden" name="alamat" value="{{ $item->alamat }}">
-                                        <input type="hidden" name="kategori_pelanggan" value="{{ $item->kategori_pelanggan }}">
-                                        <input type="hidden" name="status" id="status-{{ $item->pelanggan_id }}" value="">
+                                        <input type="hidden" name="status" id="status-value-{{ $item->cucian_id }}" value="">
                                     </form>
                                 </td>
                             </tr>
@@ -253,15 +284,15 @@
             @endif
         </div>
 
-        @if($pelanggan->hasPages())
+        @if($cucian->hasPages())
             <div class="card-footer">
                 <div class="row align-items-center">
                     <div class="col-md-6">
-                        <p class="mb-0">Menampilkan {{ $pelanggan->firstItem() ?? 0 }} sampai {{ $pelanggan->lastItem() ?? 0 }} dari {{ $pelanggan->total() }} data</p>
+                        <p class="mb-0">Menampilkan {{ $cucian->firstItem() ?? 0 }} sampai {{ $cucian->lastItem() ?? 0 }} dari {{ $cucian->total() }} data</p>
                     </div>
                     <div class="col-md-6">
                         <nav class="float-end">
-                            {{ $pelanggan->links() }}
+                            {{ $cucian->links() }}
                         </nav>
                     </div>
                 </div>
@@ -303,35 +334,41 @@ document.querySelectorAll('.dropdown-menu-custom').forEach(menu => {
     });
 });
 
-// Toggle status function
-function toggleStatus(id, currentStatus) {
+// Update status function
+function updateStatus(id, newStatus, noOrder) {
     event.preventDefault();
-    const newStatus = currentStatus === 'aktif' ? 'nonaktif' : 'aktif';
-    const statusText = newStatus === 'aktif' ? 'mengaktifkan' : 'menonaktifkan';
+    
+    const statusLabels = {
+        'diproses': 'memproses',
+        'selesai': 'menyelesaikan',
+        'diambil': 'menandai sudah diambil'
+    };
+    
+    const statusText = statusLabels[newStatus] || 'mengubah status';
     
     Swal.fire({
-        title: 'Ubah Status Pelanggan?',
-        text: `Yakin ingin ${statusText} pelanggan ini?`,
+        title: 'Update Status Cucian?',
+        text: `Yakin ingin ${statusText} cucian ${noOrder}?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Ya, Ubah!',
+        confirmButtonText: 'Ya, Update!',
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            document.getElementById('status-' + id).value = newStatus;
-            document.getElementById('toggle-form-' + id).submit();
+            document.getElementById('status-value-' + id).value = newStatus;
+            document.getElementById('status-form-' + id).submit();
         }
     });
 }
 
 // Delete confirmation function
-function confirmDelete(id, nama) {
+function confirmDelete(id, noOrder) {
     event.preventDefault();
     Swal.fire({
-        title: 'Hapus Data Pelanggan?',
-        text: `Yakin ingin menghapus pelanggan ${nama}?`,
+        title: 'Hapus Data Cucian?',
+        text: `Yakin ingin menghapus cucian ${noOrder}?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',

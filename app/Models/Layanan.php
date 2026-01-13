@@ -38,6 +38,40 @@ class Layanan extends Model
 
     const EXPRESS_MARKUP = 0.30; // 30%
 
+    // ✅ METHOD BARU: Hitung Estimasi Berdasarkan Metode Cuci
+    /**
+     * Hitung estimasi selesai berdasarkan metode cuci
+     * @param string $metodeCuci 'normal' atau 'express'
+     * @param Carbon|null $tglOrder tanggal order (default: sekarang)
+     * @return Carbon
+     */
+    public function hitungEstimasi($metodeCuci = 'normal', $tglOrder = null)
+    {
+        $tglOrder = $tglOrder ?: Carbon::now();
+        
+        if ($metodeCuci === 'express') {
+            // ✅ EXPRESS: FIXED 24 JAM untuk semua layanan
+            return $tglOrder->copy()->addHours(24);
+        } else {
+            // NORMAL: Gunakan durasi_hari dari layanan
+            $hari = $this->durasi_hari ?? 3;
+            return $tglOrder->copy()->addDays($hari);
+        }
+    }
+
+    /**
+     * Get formatted durasi text berdasarkan metode cuci
+     */
+    public function getFormattedDurasiText($metodeCuci = 'normal')
+    {
+        if ($metodeCuci === 'express') {
+            return '24 Jam';
+        } else {
+            $hari = $this->durasi_hari ?? 3;
+            return $hari . ' Hari';
+        }
+    }
+
     /**
      * Get harga normal (formatted)
      */

@@ -167,7 +167,20 @@
                         <tbody>
                             @foreach($cucian as $item)
                             <tr>
-                                <td><b>{{ $item->getNoOrder() }}</b></td>
+                                <td>
+                                    <strong>{{ $item->getNoOrder() }}</strong>
+                                    <br>
+                                    {{-- ✅ ONLINE = HIJAU, OFFLINE = ABU-ABU --}}
+                                    @if($item->jenis_order == 'online')
+                                        <span class="badge bg-success text-white">
+                                            Online
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary text-white">
+                                            Offline
+                                        </span>
+                                    @endif
+                                </td>
                                 <td>
                                     <b>{{ $item->pelanggan->nama ?? 'N/A' }}</b><br>
                                     <small class="text-muted">{{ $item->pelanggan->no_telp ?? '-' }}</small>
