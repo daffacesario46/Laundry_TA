@@ -111,7 +111,7 @@
                             </a>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
                                 <a class="dropdown-item" href="{{ route('staff.dashboard') }}"><i class="material-icons md-dashboard"></i>Dashboard</a>
-                                <a class="dropdown-item" href="{{ route('staff.profile') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
+                                <a class="dropdown-item" href="{{ route('staff.profile.index') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
                                 <div class="dropdown-divider"></div>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
