@@ -2,7 +2,7 @@
 <html lang="id">
     <head>
         <meta charset="utf-8" />
-        <title>Daftar - Laundry App</title>
+        <title>Daftar - Washwes Laundry</title>
         <meta http-equiv="x-ua-compatible" content="ie=edge" />
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,7 +21,7 @@
 			
             <section class="content-main mt-40 mb-80">
 					<a href="/" class="p-0 m-0">
-						<h1 class="p-0 m-0">Laundry App</h1>
+						<h1 class="p-0 m-0">Washwes Laundry</h1>
 					 </a>
                 <div class="card mx-auto card-login">
                     <div class="card-body">

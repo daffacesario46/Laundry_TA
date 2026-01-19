@@ -135,9 +135,12 @@
                             <div class="col-md-6 mb-4">
                                 <label for="kategori_pelanggan" class="form-label">Kategori Pelanggan <span class="text-danger">*</span></label>
                                 <select class="form-select @error('kategori_pelanggan') is-invalid @enderror" 
-                                        id="kategori_pelanggan" name="kategori_pelanggan" required>
-                                    <option value="umum" {{ old('kategori_pelanggan', $pelanggan->kategori_pelanggan) == 'umum' ? 'selected' : '' }}>Umum</option>
-                                    <option value="member" {{ old('kategori_pelanggan', $pelanggan->kategori_pelanggan) == 'member' ? 'selected' : '' }}>Member</option>
+                                        id="kategori_pelanggan" 
+                                        name="kategori_pelanggan" 
+                                        required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="offline" {{ $pelanggan->kategori_pelanggan == 'offline' ? 'selected' : '' }}>Offline</option>
+                                    <option value="online" {{ $pelanggan->kategori_pelanggan == 'online' ? 'selected' : '' }}>Online</option>
                                 </select>
                                 @error('kategori_pelanggan')
                                     <div class="invalid-feedback">{{ $message }}</div>

@@ -27,7 +27,7 @@
                         <div class="row">
                             <!-- Jenis Bahan -->
                             <div class="col-md-6 mb-4">
-                                <label class="form-label">Jenis Bahan <span class="text-danger">*</span></label>
+                                <label class="form-label">Nama Item <span class="text-danger">*</span></label>
                                 <input type="text" 
                                     name="jenis_bahan" 
                                     class="form-control @error('jenis_bahan') is-invalid @enderror" 

@@ -106,18 +106,15 @@
                             <small class="text-muted">Contoh: Jl. Merdeka No. 123, Jakarta Selatan</small>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="kategori_pelanggan" class="form-label">Kategori Pelanggan <span class="text-danger">*</span></label>
-                            <select class="form-select @error('kategori_pelanggan') is-invalid @enderror" 
-                                    id="kategori_pelanggan" name="kategori_pelanggan" required>
-                                <option value="">Pilih Kategori</option>
-                                <option value="umum" {{ old('kategori_pelanggan') == 'umum' ? 'selected' : '' }}>Umum</option>
-                                <option value="member" {{ old('kategori_pelanggan') == 'member' ? 'selected' : '' }}>Member</option>
-                            </select>
-                            @error('kategori_pelanggan')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <select class="form-select @error('kategori_pelanggan') is-invalid @enderror" 
+                                id="kategori_pelanggan" 
+                                name="kategori_pelanggan" 
+                                required>
+                            <option value="">Pilih Kategori</option>
+                            <option value="offline" {{ old('kategori_pelanggan') == 'offline' ? 'selected' : '' }}>Offline</option>
+                            <option value="online" {{ old('kategori_pelanggan') == 'online' ? 'selected' : '' }}>Online</option>
+                        </select>
+
 
                         <hr class="my-4">
                         <h5 class="mb-3">Akun Login (Opsional)</h5>

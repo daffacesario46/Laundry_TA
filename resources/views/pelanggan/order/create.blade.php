@@ -89,8 +89,6 @@
                                 <select class="form-select @error('metode_bayar') is-invalid @enderror" 
                                         name="metode_bayar"
                                         required>
-                                    <option value="">-- Pilih --</option>
-                                    <option value="cash" {{ old('metode_bayar') == 'cash' ? 'selected' : '' }}>Cash</option>
                                     <option value="transfer" {{ old('metode_bayar') == 'transfer' ? 'selected' : '' }}>Transfer</option>
                                 </select>
                                 @error('metode_bayar')

@@ -35,12 +35,6 @@ class KurirController extends Controller
         return view('admin.kurir.index', compact('kurir'));
     }
 
-    // ✅ ADDED - Show create form
-    public function create()
-    {
-        return view('admin.kurir.create');
-    }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -72,13 +66,6 @@ class KurirController extends Controller
 
         return redirect()->route('admin.kurir.index')
             ->with('success', 'Kurir berhasil ditambahkan');
-    }
-
-    // ✅ ADDED - Show edit form
-    public function edit($id)
-    {
-        $kurir = User::where('role', 'kurir')->findOrFail($id);
-        return view('admin.kurir.edit', compact('kurir'));
     }
 
     public function update(Request $request, $id)
@@ -143,7 +130,7 @@ class KurirController extends Controller
         $kurir->status = $kurir->status == 'aktif' ? 'nonaktif' : 'aktif';
         $kurir->save();
 
-        return redirect()->route('admin.kurir.index', ['action' => 'toggle'])
+        return redirect()->route('admin.kurir.index')
             ->with('success', 'Status kurir berhasil diubah');
     }
 }

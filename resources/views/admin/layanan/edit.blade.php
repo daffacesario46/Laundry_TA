@@ -61,6 +61,25 @@
                             </div>
                         </div>
 
+                        {{-- ✅ INPUT HARGA --}}
+                        <div class="mb-4">
+                            <label class="form-label">Harga <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" 
+                                       class="form-control @error('harga') is-invalid @enderror" 
+                                       name="harga" 
+                                       value="{{ old('harga', $layanan->harga) }}"
+                                       min="0"
+                                       step="100"
+                                       required />
+                                @error('harga')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="text-muted">Harga per kg (kiloan) atau per item (satuan)</small>
+                        </div>
+
                         <div class="mb-4">
                             <label class="form-label">Deskripsi</label>
                             <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
@@ -91,6 +110,10 @@
                     <h5 class="card-title">Informasi Data</h5>
                     <p class="text-muted small mb-2">
                         <strong>ID:</strong> {{ $layanan->layanan_id }}
+                    </p>
+                    <p class="text-muted small mb-2">
+                        <strong>Harga Saat Ini:</strong><br>
+                        <span class="h5 text-primary">{{ $layanan->getFormattedHarga() }}</span>
                     </p>
                     <p class="text-muted small mb-2">
                         <strong>Dibuat:</strong><br>
@@ -126,6 +149,7 @@
                     <ul class="text-muted small">
                         <li>Pastikan durasi pengerjaan realistis</li>
                         <li>Jenis cucian menentukan cara perhitungan harga</li>
+                        <li>Harga yang diupdate tidak akan mempengaruhi transaksi lama</li>
                         <li>Perbarui deskripsi jika ada perubahan detail layanan</li>
                     </ul>
                 </div>

@@ -90,13 +90,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 
     // KURIR MANAGEMENT
     Route::prefix('kurir')->name('kurir.')->group(function () {
-        Route::get('/', [KurirController::class, 'index'])->name('index');
-        Route::get('/create', [KurirController::class, 'create'])->name('create');
-        Route::post('/', [KurirController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [KurirController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [KurirController::class, 'update'])->name('update');
-        Route::delete('/{id}', [KurirController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/toggle-status', [KurirController::class, 'toggleStatus'])->name('toggle-status');
+    Route::get('/', [KurirController::class, 'index'])->name('index');
+    Route::post('/', [KurirController::class, 'store'])->name('store');
+    Route::put('/{id}', [KurirController::class, 'update'])->name('update');
+    Route::delete('/{id}', [KurirController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle-status', [KurirController::class, 'toggleStatus'])->name('toggle-status');
     });
 
     // List Harga Routes

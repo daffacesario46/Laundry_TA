@@ -80,7 +80,7 @@
                                 <img class="img-xs rounded-circle" style="width: 50px; height: 50px" src="{{ auth()->user()->img ?? asset('admins/imgs/people/avatar-2.png')}}" alt="User" />
                             </a>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
-                                <a class="dropdown-item" href="{{ route('pelanggan.profile') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
+                                <a class="dropdown-item" href="{{ route('pelanggan.profile.index') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
                                 <a class="dropdown-item" href="{{ route('pelanggan.order.index') }}"><i class="material-icons md-receipt"></i>Order</a>
                                 <div class="dropdown-divider"></div>
                                 <form onsubmit="submitLogout(this, event)" action="{{ route('logout') }}" method="POST">

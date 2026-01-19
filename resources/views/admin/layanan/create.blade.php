@@ -63,6 +63,26 @@
                             </div>
                         </div>
 
+                        {{-- ✅ INPUT HARGA --}}
+                        <div class="mb-4">
+                            <label class="form-label">Harga <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" 
+                                       class="form-control @error('harga') is-invalid @enderror" 
+                                       name="harga" 
+                                       placeholder="Contoh: 7000" 
+                                       value="{{ old('harga') }}"
+                                       min="0"
+                                       step="100"
+                                       required />
+                                @error('harga')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="text-muted">Harga per kg (kiloan) atau per item (satuan)</small>
+                        </div>
+
                         <div class="mb-4">
                             <label class="form-label">Deskripsi</label>
                             <textarea class="form-control @error('deskripsi') is-invalid @enderror" 
@@ -104,12 +124,12 @@
                     <hr>
                     <p class="text-muted small mb-2"><strong>Contoh Layanan:</strong></p>
                     <ul class="text-muted small">
-                        <li>Cuci Kering (kiloan)</li>
-                        <li>Cuci Setrika (kiloan)</li>
-                        <li>Cuci Setrika Express (kiloan)</li>
-                        <li>Setrika Saja (kiloan)</li>
-                        <li>Cuci Satuan Premium (satuan)</li>
-                        <li>Dry Cleaning (satuan)</li>
+                        <li>Cuci Kering - Rp 5.000/kg</li>
+                        <li>Cuci Setrika - Rp 7.000/kg</li>
+                        <li>Cuci Setrika Express - Rp 10.000/kg</li>
+                        <li>Setrika Saja - Rp 4.000/kg</li>
+                        <li>Cuci Satuan Premium - Rp 18.000/pcs</li>
+                        <li>Dry Cleaning - Rp 20.000/pcs</li>
                     </ul>
                 </div>
             </div>

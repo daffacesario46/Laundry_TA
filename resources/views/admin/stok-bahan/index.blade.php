@@ -72,7 +72,7 @@
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>Jenis Bahan</th>
+                                <th>Nama</th>
                                 <th>Merk</th>
                                 <th>Stok Tersedia</th>
                                 <th>Satuan</th>

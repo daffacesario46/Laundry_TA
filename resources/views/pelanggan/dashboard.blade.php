@@ -182,10 +182,10 @@
                         @endif
                         <h6 class="mb-0">{{ $pelanggan->nama ?? 'Pelanggan' }}</h6>
                         <small class="text-muted">
-                            @if($pelanggan && $pelanggan->kategori_pelanggan == 'member')
-                                <span class="badge bg-success">Member</span>
+                            @if($pelanggan->kategori_pelanggan == 'online')
+                                <span class="badge bg-success">Pelanggan Online</span>
                             @else
-                                <span class="badge bg-secondary">Pelanggan Umum</span>
+                                <span class="badge bg-secondary">Pelanggan Offline</span>
                             @endif
                         </small>
                     </div>
