@@ -15,7 +15,7 @@ return new class extends Migration
         // ✅ Ubah kolom cucian_detail agar support kiloan & satuan
         Schema::table('cucian_detail', function (Blueprint $table) {
             // PENTING: Kolom jumlah jadi NULLABLE (untuk kiloan)
-            DB::statement('ALTER TABLE `cucian_detail` MODIFY `jumlah` INT NULL DEFAULT NULL');
+            $table->integer('jumlah')->nullable()->default(null)->change();
             
             // Kolom berat_kg sudah nullable (OK)
             // Kolom harga_satuan & harga_kiloan sudah nullable (OK)
@@ -29,7 +29,7 @@ return new class extends Migration
     {
         Schema::table('cucian_detail', function (Blueprint $table) {
             // Kembalikan ke NOT NULL dengan default 1
-            DB::statement('ALTER TABLE `cucian_detail` MODIFY `jumlah` INT NOT NULL DEFAULT 1');
+            $table->integer('jumlah')->nullable(false)->default(1)->change();
         });
     }
 };
