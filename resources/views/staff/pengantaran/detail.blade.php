@@ -61,15 +61,6 @@
                         </div>
                     </div>
 
-                    @if($pengantaran->catatan)
-                    <div class="mb-3">
-                        <p class="text-muted mb-1"><i class="material-icons md-note"></i> Catatan</p>
-                        <div class="alert alert-info">
-                            {{ $pengantaran->catatan }}
-                        </div>
-                    </div>
-                    @endif
-
                     @if($pengantaran->foto)
                     <hr>
                     <div class="mb-3">

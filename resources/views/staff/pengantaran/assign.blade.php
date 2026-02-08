@@ -99,14 +99,6 @@
                             <small class="text-muted">Alamat default diambil dari data pelanggan</small>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="catatan" class="form-label">Catatan Tambahan</label>
-                            <textarea class="form-control" 
-                                      id="catatan" 
-                                      name="catatan" 
-                                      rows="2"
-                                      placeholder="Catatan untuk kurir (opsional)">{{ old('catatan', $cucian->pengantaran->catatan ?? '') }}</textarea>
-                        </div>
 
                         <div class="alert alert-info">
                             <i class="material-icons md-info"></i>

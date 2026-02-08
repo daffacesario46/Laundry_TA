@@ -433,7 +433,7 @@
         </div>
 </section>
 
-<script>
+<script> 
 let itemIndex = 0;
 let hargaPerKgGlobal = 0;
 

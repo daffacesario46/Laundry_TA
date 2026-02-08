@@ -98,7 +98,7 @@ class UserSeeder extends Seeder
         ]);
         Pelanggan::create([
             'users_id' => $user1->users_id,
-            'kategori_pelanggan' => 'member',
+            'kategori_pelanggan' => 'online',
             'nama' => 'Andi Wijaya',
             'no_telp' => '081234567895',
             'no_wa' => '081234567895',
@@ -121,7 +121,7 @@ class UserSeeder extends Seeder
         ]);
         Pelanggan::create([
             'users_id' => $user2->users_id,
-            'kategori_pelanggan' => 'member',
+            'kategori_pelanggan' => 'online',
             'nama' => 'Dewi Lestari',
             'no_telp' => '081234567896',
             'no_wa' => '081234567896',
@@ -144,7 +144,7 @@ class UserSeeder extends Seeder
         ]);
         Pelanggan::create([
             'users_id' => $user3->users_id,
-            'kategori_pelanggan' => 'member',
+            'kategori_pelanggan' => 'online',
             'nama' => 'Rudi Hartono',
             'no_telp' => '081234567897',
             'no_wa' => '081234567897',
@@ -167,7 +167,7 @@ class UserSeeder extends Seeder
         ]);
         Pelanggan::create([
             'users_id' => $user4->users_id,
-            'kategori_pelanggan' => 'member',
+            'kategori_pelanggan' => 'online',
             'nama' => 'Sari Indah',
             'no_telp' => '081234567898',
             'no_wa' => '081234567898',
@@ -190,7 +190,7 @@ class UserSeeder extends Seeder
         ]);
         Pelanggan::create([
             'users_id' => $user5->users_id,
-            'kategori_pelanggan' => 'member',
+            'kategori_pelanggan' => 'online',
             'nama' => 'Bambang Sutopo',
             'no_telp' => '081234567899',
             'no_wa' => '081234567899',

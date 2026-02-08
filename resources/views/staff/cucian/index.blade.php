@@ -208,11 +208,12 @@
                                                class="dropdown-item-custom">
                                                 <i class="material-icons md-visibility text-primary"></i> Lihat Detail
                                             </a>
+                                            @if($item->status_cucian != 'diambil' && $item->status_cucian != 'selesai')
                                             <a href="{{ route('staff.cucian.edit', $item->cucian_id) }}" 
                                                class="dropdown-item-custom">
                                                 <i class="material-icons md-edit text-warning"></i> Edit
                                             </a>
-                                            
+                                            @endif
                                             @php
                                                 $nextStatus = [
                                                     'menunggu' => ['status' => 'diproses', 'label' => 'Proses Cucian', 'icon' => 'hourglass_empty', 'color' => 'text-info'],

@@ -63,32 +63,68 @@
                         </div>
                     </div>
 
+                    <hr>
+
+                    {{-- ✅ BARIS DENGAN 4 KOLOM (SAMA SEPERTI STAFF) --}}
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="mb-1 text-muted">Jenis Layanan</p>
-                            <h6>{{ $order->layanan->nama_layanan ?? '-' }}</h6>
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">Jenis Order</p>
+                            <p class="fw-bold">{{ ucfirst($order->jenis_order) }}</p>
                         </div>
-                        <div class="col-md-6">
-                            <p class="mb-1 text-muted">Jenis Pengambilan</p>
-                            <h6>{{ $order->jenis_ambil == 'diantar' ? 'Diantar' : 'Ambil Sendiri' }}</h6>
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">Jenis Cucian</p>
+                            <p class="fw-bold">
+                                @if($order->layanan)
+                                    <span class="badge {{ $order->layanan->jenis_cucian == 'kiloan' ? 'alert-info' : 'alert-success' }}">
+                                        {{ ucfirst($order->layanan->jenis_cucian) }}
+                                    </span>
+                                @else
+                                    -
+                                @endif
+                            </p>
+                        </div>
+                        
+                        {{-- ✅ TAMBAHAN BARU: Metode Cuci --}}
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">
+                                <i class="material-icons md-local_laundry_service" style="font-size: 14px; vertical-align: middle;"></i>
+                                Metode Cuci
+                            </p>
+                            <p class="fw-bold">
+                                @if($order->metode_cuci == 'express')
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="material-icons md-flash_on" style="font-size: 12px; vertical-align: middle;"></i>
+                                        Express (+50%)
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary">Normal</span>
+                                @endif
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">Jenis Pengambilan</p>
+                            <p class="fw-bold">{{ $order->jenis_ambil == 'diantar' ? 'Diantar' : 'Ambil Sendiri' }}</p>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <p class="mb-1 text-muted">Jenis Order</p>
-                            <h6>{{ ucfirst($order->jenis_order) }}</h6>
+                            <p class="text-muted mb-1">Jenis Layanan</p>
+                            <h6>{{ $order->layanan->nama_layanan ?? '-' }}</h6>
                         </div>
                         <div class="col-md-6">
-                            <p class="mb-1 text-muted">Estimasi Selesai</p>
-                            <h6 class="text-success">{{ $order->estimasi ? $order->estimasi->format('d M Y') : '-' }}</h6>
+                            <p class="text-muted mb-1">Estimasi Selesai</p>
+                            <h6 class="text-success">{{ $order->estimasi ? $order->estimasi->format('d M Y, H:i') : '-' }}</h6>
                         </div>
                     </div>
 
                     @if($order->catatan)
                     <hr>
                     <div>
-                        <p class="mb-1 text-muted">Catatan</p>
+                        <p class="mb-1 text-muted">
+                            <i class="material-icons md-note"></i> Catatan
+                        </p>
                         <div class="alert alert-info">
                             {{ $order->catatan }}
                         </div>
@@ -97,7 +133,7 @@
                 </div>
             </div>
 
-            <!-- SECTION PEMBAYARAN - ADDED 👇 -->
+            <!-- SECTION PEMBAYARAN -->
             @if($order->hasPembayaran())
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
@@ -209,7 +245,6 @@
                     </div>
                 </div>
             @endif
-            <!-- 👆 SECTION PEMBAYARAN - ADDED -->
 
             <!-- Detail Item -->
             <div class="card mb-4">
@@ -382,13 +417,11 @@
                         <strong class="text-primary">{{ $order->getFormattedTotalHarga() }}</strong>
                     </div>
 
-                    {{-- UPDATED: Cancel Order Button 👇 --}}
                     @if($order->status_cucian == 'menunggu')
                         <button class="btn btn-danger w-100" onclick="cancelOrder()">
                             <i class="material-icons md-cancel"></i> Batalkan Order
                         </button>
                     @endif
-                    {{-- 👆 UPDATED --}}
                 </div>
             </div>
 
@@ -405,15 +438,13 @@
 
                     <div class="mb-0">
                         <small class="text-muted">Estimasi Selesai</small>
-                        <p class="mb-0"><strong class="text-success">{{ $order->estimasi ? $order->estimasi->format('d M Y') : '-' }}</strong></p>
+                        <p class="mb-0"><strong class="text-success">{{ $order->estimasi ? $order->estimasi->format('d M Y, H:i') : '-' }}</strong></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
-
-<!-- REMOVED: Modal Upload Bukti (sekarang pakai halaman terpisah) -->
 
 <!-- Form Cancel Order -->
 <form id="cancel-form" action="{{ route('pelanggan.order.cancel', $order->cucian_id) }}" method="POST" style="display: none;">

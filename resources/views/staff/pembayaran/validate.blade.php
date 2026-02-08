@@ -82,12 +82,6 @@
                             <td>Tanggal Upload</td>
                             <td>{{ $pembayaran->updated_at->format('d/m/Y H:i') }}</td>
                         </tr>
-                        @if($pembayaran->catatan)
-                        <tr>
-                            <td>Catatan</td>
-                            <td>{{ $pembayaran->catatan }}</td>
-                        </tr>
-                        @endif
                     </table>
                 </div>
             </div>
@@ -101,11 +95,7 @@
                     <form action="{{ route('staff.pembayaran.validate', $pembayaran->pembayaran_id) }}" method="POST" id="validateForm">
                         @csrf
                         @method('PUT')
-                        
-                        <div class="mb-4">
-                            <label class="form-label">Catatan Validasi</label>
-                            <textarea class="form-control" name="catatan" rows="3" placeholder="Tambahkan catatan jika diperlukan"></textarea>
-                        </div>
+                    
 
                         <div class="d-grid gap-2">
                             <button type="button" 

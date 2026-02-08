@@ -1,6 +1,6 @@
 <aside class="navbar-aside" id="offcanvas_aside">
     <div class="aside-top">
-        <a href="{{ route('admin.dashboard') }}" class="brand-wrap">
+        <a href="{{ route('tracking.index') }}" class="brand-wrap">
             <img src="{{ asset('admins/imgs/theme/washwes.png') }}" class="logo" alt="Washwes" style="width: 50px; height: 100px;" />
         </a>
         <div>

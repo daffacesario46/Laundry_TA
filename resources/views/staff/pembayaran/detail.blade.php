@@ -103,15 +103,6 @@
                             <i class="icon material-icons md-local_laundry_service"></i>
                             Lihat Cucian
                         </a>
-
-                        @if($pembayaran->status_bayar == 'belum')
-                            <button type="button" 
-                                    class="btn btn-danger" 
-                                    onclick="deletePembayaran()">
-                                <i class="icon material-icons md-delete"></i>
-                                Batalkan Pembayaran
-                            </button>
-                        @endif
                     </div>
                 </div>
             </div>

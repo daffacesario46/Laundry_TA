@@ -58,16 +58,6 @@
                             @enderror
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label">Catatan (Opsional)</label>
-                            <textarea name="catatan" 
-                                      class="form-control @error('catatan') is-invalid @enderror" 
-                                      rows="2" 
-                                      placeholder="Contoh: Antar setelah jam 3 sore, pastikan pelanggan ada di rumah">{{ old('catatan') }}</textarea>
-                            @error('catatan')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ route('staff.cucian.show', $cucian->cucian_id) }}" class="btn btn-light">

@@ -78,57 +78,86 @@ class PembayaranController extends Controller
      * Process payment for offline customer
      */
     public function processPayment(Request $request, $cucian_id)
-    {
-        $request->validate([
-            'metode_bayar' => 'required|in:cash,transfer',
-            'jumlah_bayar' => 'required|numeric|min:0',
-            'catatan' => 'nullable|string'
-        ], [
-            'metode_bayar.required' => 'Metode pembayaran wajib dipilih',
-            'jumlah_bayar.required' => 'Jumlah bayar wajib diisi',
-            'jumlah_bayar.numeric' => 'Jumlah bayar harus berupa angka',
-            'jumlah_bayar.min' => 'Jumlah bayar minimal 0'
-        ]);
+{
+    $request->validate([
+        'metode_bayar' => 'required|in:cash,transfer',
+        'jumlah_bayar' => 'required|numeric|min:0',
+        'catatan' => 'nullable|string'
+    ], [
+        'metode_bayar.required' => 'Metode pembayaran wajib dipilih',
+        'jumlah_bayar.required' => 'Jumlah bayar wajib diisi',
+        'jumlah_bayar.numeric' => 'Jumlah bayar harus berupa angka',
+        'jumlah_bayar.min' => 'Jumlah bayar minimal 0'
+    ]);
 
-        DB::beginTransaction();
-        try {
-            $cucian = Cucian::findOrFail($cucian_id);
-
-            // Check if payment already exists
-            if ($cucian->hasPembayaran()) {
-                $pembayaran = $cucian->pembayaran;
-                
-                // Update existing payment
-                $pembayaran->update([
-                    'metode_bayar' => $request->metode_bayar,
-                    'status_bayar' => 'lunas',
-                    'jumlah_bayar' => $request->jumlah_bayar,
-                    'tgl_bayar' => now(),
-                    'catatan' => $request->catatan
-                ]);
-            } else {
-                // Create new payment
-                $pembayaran = Pembayaran::create([
-                    'cucian_id' => $cucian_id,
-                    'metode_bayar' => $request->metode_bayar,
-                    'status_bayar' => 'lunas',
-                    'jumlah_bayar' => $request->jumlah_bayar,
-                    'tgl_bayar' => now(),
-                    'catatan' => $request->catatan
-                ]);
-            }
-
-            DB::commit();
-
-            return redirect()->route('staff.pembayaran.show', $pembayaran->pembayaran_id)
-                ->with('success', 'Pembayaran berhasil diproses!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()])
+    DB::beginTransaction();
+    try {
+        $cucian = Cucian::findOrFail($cucian_id);
+        
+        // ✅ HITUNG KEMBALIAN
+        $totalHarga = $cucian->total_harga;
+        $jumlahBayar = $request->jumlah_bayar;
+        $kembalian = $jumlahBayar - $totalHarga;
+        
+        // ✅ VALIDASI: Jika cash, jumlah bayar harus >= total harga
+        if ($request->metode_bayar == 'cash' && $jumlahBayar < $totalHarga) {
+            return back()->withErrors(['jumlah_bayar' => 'Jumlah bayar tidak boleh kurang dari total harga!'])
                 ->withInput();
         }
+        
+        // ✅ BUILD CATATAN (termasuk info kembalian)
+        $catatanPembayaran = $request->catatan ?? '';
+        if ($request->metode_bayar == 'cash') {
+            $catatanInfo = "Jumlah Bayar: Rp " . number_format($jumlahBayar, 0, ',', '.');
+            $catatanInfo .= "\nKembalian: Rp " . number_format($kembalian, 0, ',', '.');
+            
+            if (!empty($catatanPembayaran)) {
+                $catatanInfo .= "\nCatatan: " . $catatanPembayaran;
+            }
+            $catatanPembayaran = $catatanInfo;
+        }
+
+        // Check if payment already exists
+        if ($cucian->hasPembayaran()) {
+            $pembayaran = $cucian->pembayaran;
+            
+            // Update existing payment
+            $pembayaran->update([
+                'metode_bayar' => $request->metode_bayar,
+                'status_bayar' => 'lunas',
+                'jumlah_bayar' => $totalHarga, // ✅ Simpan total harga asli
+                'tgl_bayar' => now(),
+                'catatan' => $catatanPembayaran
+            ]);
+        } else {
+            // Create new payment
+            $pembayaran = Pembayaran::create([
+                'cucian_id' => $cucian_id,
+                'metode_bayar' => $request->metode_bayar,
+                'status_bayar' => 'lunas',
+                'jumlah_bayar' => $totalHarga, // ✅ Simpan total harga asli
+                'tgl_bayar' => now(),
+                'catatan' => $catatanPembayaran
+            ]);
+        }
+
+        DB::commit();
+        
+        // ✅ SUCCESS MESSAGE DENGAN INFO KEMBALIAN
+        $successMessage = 'Pembayaran berhasil diproses!';
+        if ($request->metode_bayar == 'cash' && $kembalian > 0) {
+            $successMessage .= ' Kembalian: Rp ' . number_format($kembalian, 0, ',', '.');
+        }
+        
+        return redirect()->route('staff.pembayaran.show', $pembayaran->pembayaran_id)
+            ->with('success', $successMessage);
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()])
+            ->withInput();
     }
+}
 
     /**
      * Create Midtrans payment

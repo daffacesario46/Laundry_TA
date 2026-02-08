@@ -67,6 +67,29 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        
+                        {{-- ✅ 3. METODE CUCI (BARU) --}}
+                            <div class="mb-3">
+                                <label for="metode_cuci" class="form-label">Metode Cuci <span class="text-danger">*</span></label>
+                                <select class="form-select @error('metode_cuci') is-invalid @enderror" 
+                                        id="metode_cuci" name="metode_cuci" required>
+                                    <option value="">-- Pilih Metode --</option>
+                                    <option value="normal" {{ old('metode_cuci') == 'normal' ? 'selected' : '' }}>
+                                        Normal (Harga Standar)
+                                    </option>
+                                    <option value="express" {{ old('metode_cuci') == 'express' ? 'selected' : '' }}>
+                                        Express (+50% dari harga)
+                                    </option>
+                                </select>
+                                @error('metode_cuci')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">
+                                    <i class="material-icons md-info" style="font-size: 14px;"></i>
+                                    Express akan menambah biaya 50% dari total harga layanan
+                                </small>
+                            </div>
+
 
                         <div class="row">
                             <div class="col-md-6 mb-3">

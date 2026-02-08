@@ -126,12 +126,6 @@
                     </div>
 
                     <hr>
-
-                    <div class="text-center">
-                        <i class="material-icons text-warning" style="font-size: 48px;">stars</i>
-                        <h5 class="mt-2 mb-1">Member Gold</h5>
-                        <p class="text-muted small">Tingkatkan ke Platinum dengan 10 order lagi!</p>
-                    </div>
                 </div>
             </div>
 

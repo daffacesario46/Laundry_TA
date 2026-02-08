@@ -139,14 +139,6 @@
                                     <i class="icon material-icons md-visibility"></i>
                                 </a>
 
-                                @if($item->status_bayar === 'belum')
-                                    <a href="{{ route('staff.pembayaran.midtrans', $item->pembayaran_id) }}" 
-                                       class="btn btn-sm btn-success" 
-                                       title="Bayar via Midtrans">
-                                        <i class="icon material-icons md-payment"></i>
-                                    </a>
-                                @endif
-                                
                                 @if($item->metode_bayar == 'transfer' && $item->status_bayar == 'belum' && $item->bukti_bayar)
                                     <a href="{{ route('staff.pembayaran.validate-form', $item->pembayaran_id) }}" 
                                        class="btn btn-sm btn-warning" title="Validasi">

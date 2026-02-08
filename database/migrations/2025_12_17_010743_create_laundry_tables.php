@@ -27,8 +27,8 @@ return new class extends Migration
         // Table: pelanggan
         Schema::create('pelanggan', function (Blueprint $table) {
             $table->increments('pelanggan_id');
-            $table->unsignedBigInteger('users_id')->nullable();
-            $table->string('kategori_pelanggan', 50);
+            $table->unsignedBigInteger('users_id')->nullable()
+            ;$table->enum('kategori_pelanggan', ['online', 'offline'])->default('offline');
             $table->string('nama', 100);
             $table->string('no_telp', 20)->nullable();
             $table->string('no_wa', 20)->nullable();

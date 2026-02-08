@@ -268,21 +268,27 @@ public function store(Request $request)
      * Show edit form
      */
     public function edit($id)
-    {
-        $cucian = Cucian::with('detail.listHarga', 'layanan')->findOrFail($id);
-        
-        // ✅ FIXED: Hilangkan duplikat pelanggan
-        $pelanggan = Pelanggan::where('status', 'aktif')
-            ->orderBy('nama')
-            ->get()
-            ->unique('no_telp')
-            ->values();
-        
-        $layanan = Layanan::orderBy('nama_layanan')->get();
-        $listHarga = ListHarga::orderBy('nama_item')->get();
-        
-        return view('staff.cucian.edit', compact('cucian', 'pelanggan', 'layanan', 'listHarga'));
-    }
+{
+    $cucian = Cucian::with('detail.listHarga', 'layanan')->findOrFail($id);
+    
+    // ✅ OPSIONAL: Proteksi juga untuk status selesai (jika perlu)
+    if (in_array($cucian->status_cucian, ['selesai', 'diambil'])) {
+         return redirect()->route('staff.cucian.index')
+             ->with('error', 'Cucian dengan status ' . $cucian->getStatusLabel() . ' tidak dapat diedit!');
+     }
+    
+    // ✅ FIXED: Hilangkan duplikat pelanggan
+    $pelanggan = Pelanggan::where('status', 'aktif')
+        ->orderBy('nama')
+        ->get()
+        ->unique('no_telp')
+        ->values();
+    
+    $layanan = Layanan::orderBy('nama_layanan')->get();
+    $listHarga = ListHarga::orderBy('nama_item')->get();
+    
+    return view('staff.cucian.edit', compact('cucian', 'pelanggan', 'layanan', 'listHarga'));
+}
 
     /**
      * ✅ Show form untuk input berat (khusus kiloan ONLINE)
@@ -401,7 +407,11 @@ public function store(Request $request)
     public function update(Request $request, $id)
     {
         $cucian = Cucian::with('detail.listHarga', 'layanan')->findOrFail($id);
-        
+        // ✅ PROTEKSI: Block update jika status diambil (kecuali admin mau paksa update status)
+    if ($cucian->status_cucian == 'diambil' && !$request->has('force_update')) {
+        return redirect()->route('staff.cucian.index')
+            ->with('error', 'Cucian yang sudah diambil tidak dapat diupdate!');
+    }
         $validated = $request->validate([
             'pelanggan_id' => 'required|exists:pelanggan,pelanggan_id',
             'layanan_id' => 'required|exists:layanan,layanan_id',
@@ -496,7 +506,10 @@ public function store(Request $request)
         DB::beginTransaction();
         try {
             $cucian = Cucian::findOrFail($id);
-            
+            if ($cucian->status_cucian == 'diambil') {
+            return redirect()->route('staff.cucian.show', $id)
+                ->with('error', 'Cucian yang sudah diambil tidak dapat diupdate beratnya!');
+        }
             $totalBerat = 0;
             $totalHarga = 0;
             
