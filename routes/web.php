@@ -42,8 +42,8 @@ use App\Http\Controllers\MidtransController;
 */
 
 // Home
-Route::get('/', function() {
-    return view('welcome');
+Route::get('/', function () {
+    return view('welcome');  // home.blade.php kamu
 })->name('home');
 
 // Authentication Routes
@@ -164,27 +164,18 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
     // Dashboard
     Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
     
-    // PROFILE STAFF
-    Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', [StaffProfileController::class, 'index'])->name('index');
-        Route::get('/edit', [StaffProfileController::class, 'edit'])->name('edit');
-        Route::put('/update', [StaffProfileController::class, 'update'])->name('update');
-        Route::get('/change-password', [StaffProfileController::class, 'changePassword'])->name('change-password');
-        Route::put('/update-password', [StaffProfileController::class, 'updatePassword'])->name('update-password');
-        Route::delete('/delete-photo', [StaffProfileController::class, 'deletePhoto'])->name('delete-photo');
-    });
-    
     // CRUD Cucian
     Route::prefix('cucian')->name('cucian.')->group(function () {
         Route::get('/', [CucianController::class, 'index'])->name('index');
         Route::get('/create', [CucianController::class, 'create'])->name('create');
         Route::post('/', [CucianController::class, 'store'])->name('store');
         Route::get('/{id}', [CucianController::class, 'show'])->name('show');
+        Route::get('/{id}/detail', [CucianController::class, 'detail'])->name('detail');
         Route::get('/{id}/edit', [CucianController::class, 'edit'])->name('edit');
         Route::put('/{id}', [CucianController::class, 'update'])->name('update');
         Route::delete('/{id}', [CucianController::class, 'destroy'])->name('destroy');
-        Route::get('/{id}/input-berat', [CucianController::class, 'showInputBerat'])->name('input-berat');
-        Route::put('/{id}/update-berat', [CucianController::class, 'updateBerat'])->name('update-berat');
+        Route::get('/{id}/print', [CucianController::class, 'print'])->name('print');
+        Route::get('/{id}/invoice', [CucianController::class, 'invoice'])->name('invoice');
     });
     
     // CRUD Pelanggan
@@ -268,6 +259,9 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         // Delete
         Route::delete('/{id}', [PengantaranController::class, 'destroy'])->name('destroy');
     });
+
+    // ✅ TAMBAHAN: Profile Staff
+    Route::get('/profile', [StaffProfileController::class, 'index'])->name('profile');
 
 }); // TUTUP STAFF ROUTES
 
