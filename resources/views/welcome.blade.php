@@ -94,7 +94,6 @@
 									<a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false"> <img class="img-xs rounded-circle" style="width: 50px; height: 50px" src="{{ auth()->user()->img ?? asset('admins/imgs/people/avatar-2.png') }}" alt="User" /></a>
 									<div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
 										<a class="dropdown-item" href="{{ route('admin.index') }}"><i class="material-icons md-perm_identity"></i>Dashboard</a>
-										<a class="dropdown-item" href="{{ route('admin.profile') }}"><i class="material-icons md-perm_identity"></i>Profile</a>
 											<div class="dropdown-divider"></div>
 											<form action="{{ route('logout') }}" method="POST">
 												@method('DELETE')

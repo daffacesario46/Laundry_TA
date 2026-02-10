@@ -20,7 +20,7 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{{ route('staff.profile.index') }}">
+                        <a class="dropdown-item" href="{{ route('staff.profile') }}">
                             <i class="material-icons md-perm_identity"></i> Profile
                         </a>
                     </li>

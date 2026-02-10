@@ -102,16 +102,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::post('/{id}/toggle-status', [StaffController::class, 'toggleStatus'])->name('toggle-status');
     });
 
-    // KURIR MANAGEMENT
+    // KURIR MANAGEMENT (di dalam Route admin)
     Route::prefix('kurir')->name('kurir.')->group(function () {
         Route::get('/', [KurirController::class, 'index'])->name('index');
-        Route::get('/create', [KurirController::class, 'create'])->name('create');
         Route::post('/', [KurirController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [KurirController::class, 'edit'])->name('edit');
         Route::put('/{id}', [KurirController::class, 'update'])->name('update');
         Route::delete('/{id}', [KurirController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [KurirController::class, 'toggleStatus'])->name('toggle-status');
     });
+
 
     // List Harga Routes
     Route::prefix('list-harga')->name('list-harga.')->group(function () {
@@ -259,8 +258,6 @@ Route::prefix('staff')->name('staff.')->middleware(['auth', 'role:staff'])->grou
         // Delete
         Route::delete('/{id}', [PengantaranController::class, 'destroy'])->name('destroy');
     });
-
-    // ✅ TAMBAHAN: Profile Staff
     Route::get('/profile', [StaffProfileController::class, 'index'])->name('profile');
 
 }); // TUTUP STAFF ROUTES

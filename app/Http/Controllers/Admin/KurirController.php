@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Storage;
 
 class KurirController extends Controller
 {
+    /**
+     * Display kurir index with modal
+     */
     public function index(Request $request)
     {
         $perPage = $request->get('paginate', 15);
@@ -35,12 +38,9 @@ class KurirController extends Controller
         return view('admin.kurir.index', compact('kurir'));
     }
 
-    // ✅ ADDED - Show create form
-    public function create()
-    {
-        return view('admin.kurir.create');
-    }
-
+    /**
+     * Store new kurir (dari modal)
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -51,6 +51,17 @@ class KurirController extends Controller
             'no_wa' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'nama.required' => 'Nama wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah terdaftar',
+            'password.required' => 'Password wajib diisi',
+            'password.min' => 'Password minimal 6 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+            'foto.image' => 'File harus berupa gambar',
+            'foto.mimes' => 'Format foto harus JPG, JPEG, atau PNG',
+            'foto.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
         $kurir = User::create([
@@ -64,6 +75,7 @@ class KurirController extends Controller
             'status' => 'aktif',
         ]);
 
+        // Upload foto jika ada
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('kurir', 'public');
             $kurir->foto = $path;
@@ -74,13 +86,9 @@ class KurirController extends Controller
             ->with('success', 'Kurir berhasil ditambahkan');
     }
 
-    // ✅ ADDED - Show edit form
-    public function edit($id)
-    {
-        $kurir = User::where('role', 'kurir')->findOrFail($id);
-        return view('admin.kurir.edit', compact('kurir'));
-    }
-
+    /**
+     * Update kurir (dari modal)
+     */
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -91,10 +99,21 @@ class KurirController extends Controller
             'no_wa' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'nama.required' => 'Nama wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah terdaftar',
+            'password.min' => 'Password minimal 6 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+            'foto.image' => 'File harus berupa gambar',
+            'foto.mimes' => 'Format foto harus JPG, JPEG, atau PNG',
+            'foto.max' => 'Ukuran foto maksimal 2MB',
         ]);
 
         $kurir = User::findOrFail($id);
         
+        // Update data
         $kurir->update([
             'nama' => $request->nama,
             'email' => $request->email,
@@ -103,16 +122,19 @@ class KurirController extends Controller
             'alamat' => $request->alamat,
         ]);
 
+        // Update password jika diisi
         if ($request->filled('password')) {
             $kurir->password = Hash::make($request->password);
             $kurir->save();
         }
 
+        // Update foto jika ada
         if ($request->hasFile('foto')) {
             // Hapus foto lama jika ada
             if ($kurir->foto) {
                 Storage::disk('public')->delete($kurir->foto);
             }
+            
             $path = $request->file('foto')->store('kurir', 'public');
             $kurir->foto = $path;
             $kurir->save();
@@ -122,6 +144,9 @@ class KurirController extends Controller
             ->with('success', 'Kurir berhasil diupdate');
     }
 
+    /**
+     * Delete kurir
+     */
     public function destroy($id)
     {
         $kurir = User::findOrFail($id);
@@ -137,13 +162,16 @@ class KurirController extends Controller
             ->with('success', 'Kurir berhasil dihapus');
     }
 
+    /**
+     * Toggle status kurir
+     */
     public function toggleStatus($id)
     {
         $kurir = User::findOrFail($id);
         $kurir->status = $kurir->status == 'aktif' ? 'nonaktif' : 'aktif';
         $kurir->save();
 
-        return redirect()->route('admin.kurir.index', ['action' => 'toggle'])
-            ->with('success', 'Status kurir berhasil diubah');
+        return redirect()->route('admin.kurir.index')
+            ->with('success', 'Status kurir berhasil diubah menjadi ' . ucfirst($kurir->status));
     }
 }

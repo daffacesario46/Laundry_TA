@@ -53,23 +53,6 @@
                                 </div>
                                 <small class="text-muted">Harga per pcs/item (wajib diisi, minimal 0)</small>
                             </div>
-
-                            <div class="col-md-6 mb-4">
-                                <label class="form-label">Harga Kiloan</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" 
-                                           class="form-control @error('harga_kiloan') is-invalid @enderror" 
-                                           name="harga_kiloan" 
-                                           placeholder="0 (opsional)" 
-                                           value="{{ old('harga_kiloan') }}"
-                                           min="0" />
-                                    @error('harga_kiloan')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <small class="text-muted">Harga per kg (opsional, kosongkan jika tidak ada)</small>
-                            </div>
                         </div>
 
                         <div class="d-flex gap-2">
