@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -23,14 +24,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'nama' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'password' => static::$password ??= Hash::make('password'),
             'role' => fake()->randomElement(['admin', 'kurir', 'staff', 'pelanggan']),
+            'email' => fake()->unique()->safeEmail(),
+            'nama' => fake()->name(),
+            'password' => static::$password ??= Hash::make('password'),
             'no_telp' => fake()->phoneNumber(),
             'no_wa' => fake()->phoneNumber(),
             'alamat' => fake()->address(),
-            'status' => 'aktif',
+            'foto' => null,
+            'status' => fake()->randomElement(['aktif', 'nonaktif']),
         ];
     }
 
@@ -40,7 +42,7 @@ class UserFactory extends Factory
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
-            //
+            'email_verified_at' => null,
         ]);
     }
 }
